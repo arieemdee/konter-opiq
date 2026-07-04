@@ -22,7 +22,7 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <!-- SISI KIRI: FORMS -->
+            <!-- SISI KIRI: FORMS UTAMA -->
             <div class="space-y-6">
                 <!-- FORM INPUT -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
@@ -83,26 +83,62 @@
                     </form>
                 </div>
 
-                <!-- FORM FILTER -->
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <form action="/" method="GET" class="flex gap-2 mb-4">
-                        <input type="month" name="bulan" value="<%= filterBulan %>" class="p-2 border rounded text-xs w-full">
-                        <button type="submit" class="bg-gray-700 text-white px-3 py-2 rounded text-xs">Filter</button>
-                        <% if(filterBulan) { %><a href="/" class="bg-red-500 text-white px-2 py-2 rounded text-xs flex items-center">Reset</a><% } %>
+                <!-- FORM TUTUP BUKU -->
+                <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
+                    <h3 class="font-bold text-gray-700 mb-2 text-sm">🔒 Kunci Buku Bulanan</h3>
+                    <form action="/tutup-buku" method="POST" onsubmit="return confirm('Kunci semua transaksi pada bulan terpilih? Data tidak akan bisa di-edit/hapus lagi!')" class="space-y-2">
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-gray-400 mb-1">Pilih Bulan Yang Akan Dikunci</label>
+                            <input type="month" name="bulanTutup" required class="p-2 border rounded text-xs w-full bg-red-50/50">
+                        </div>
+                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 rounded transition shadow-sm">
+                            Kunci Transaksi Bulan Ini
+                        </button>
                     </form>
-                    <% if(filterBulan) { %>
-                        <form action="/tutup-buku" method="POST" onsubmit="return confirm('Kunci semua transaksi bulan ini?')">
-                            <input type="hidden" name="bulanTutup" value="<%= filterBulan %>">
-                            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs py-2 rounded">🔒 Tutup Buku <%= filterBulan %></button>
-                        </form>
-                    <% } %>
                 </div>
             </div>
 
-            <!-- SISI KANAN: TABEL TRANSAKSI -->
-            <div class="space-y-6 lg:col-span-2">
+            <!-- SISI KANAN: FILTER & TABEL TRANSAKSI -->
+            <div class="space-y-4 lg:col-span-2">
+                
+                <!-- FILTER RENTANG WAKTU HORIZONTAL -->
+                <div class="bg-white p-4 rounded-lg shadow-md flex flex-wrap items-center justify-between gap-4 border-t-4 border-blue-500">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">📅</span>
+                        <h3 class="font-bold text-gray-700 text-xs uppercase tracking-wider">Rentang Laporan</h3>
+                    </div>
+                    <form action="/" method="GET" class="flex flex-wrap items-center gap-3 text-xs">
+                        <div class="flex items-center gap-2">
+                            <label class="font-semibold text-gray-500">Dari:</label>
+                            <input type="month" name="bulanAwal" value="<%= filterBulanAwal %>" class="p-1.5 border rounded bg-gray-50 focus:ring-1 focus:ring-blue-400 font-medium">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="font-semibold text-gray-500">Sampai:</label>
+                            <input type="month" name="bulanAkhir" value="<%= filterBulanAkhir %>" class="p-1.5 border rounded bg-gray-50 focus:ring-1 focus:ring-blue-400 font-medium">
+                        </div>
+                        <div class="flex gap-1 pl-2">
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-1.5 rounded font-bold hover:bg-blue-700 transition shadow-sm">Terapkan</button>
+                            <a href="/" class="bg-gray-500 text-white px-3 py-1.5 rounded font-bold hover:bg-gray-600 transition shadow-sm text-center">Bulan Ini</a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- TABEL LAPORAN PENJUALAN -->
                 <div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
-                    <h2 class="text-xl font-bold text-gray-700 mb-4">Laporan Penjualan <%= filterBulan ? `(${filterBulan})` : '(Semua Waktu)' %></h2>
+                    <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
+                        
+                        <!-- BAGIAN JUDUL DAN TOMBOL HELP (MODIFIKASI BARU) -->
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-xl font-bold text-gray-700">Laporan Penjualan</h2>
+                            <button onclick="bukaModalBantuan()" class="bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-sm transition" title="Klik untuk melihat arti singkatan tabel">
+                                ?
+                            </button>
+                        </div>
+                        
+                        <div class="text-xs bg-blue-50 text-blue-700 font-semibold px-2.5 py-1 rounded border border-blue-100">
+                            Periode: <%= filterBulanAwal || 'Mulai Awal' %> s/d <%= filterBulanAkhir || 'Sekarang' %>
+                        </div>
+                    </div>
                     
                     <table class="w-full text-left border-collapse text-xs">
                         <thead>
@@ -121,7 +157,7 @@
                         </thead>
                         <tbody class="divide-y">
                             <% if (transaksi.length === 0) { %>
-                                <tr><td colspan="10" class="p-8 text-center text-gray-400 italic">Belum ada data.</td></tr>
+                                <tr><td colspan="10" class="p-8 text-center text-gray-400 italic">Tidak ada transaksi pada periode bulan ini.</td></tr>
                             <% } else { %>
                                 <% transaksi.forEach(t => { %>
                                     <tr class="hover:bg-gray-50 transition">
@@ -149,7 +185,6 @@
                             <% } %>
                         </tbody>
                         
-                        <!-- BARIS BARU: SUB TOTAL DI BAWAH KOLOM JML -->
                         <% if (transaksi.length > 0) { %>
                             <tfoot class="border-t-2 border-gray-300">
                                 <tr class="bg-gray-50 font-bold text-gray-700">
@@ -191,9 +226,38 @@
         </div>
     </div>
 
+    <!-- ============================================== -->
+    <!-- MODAL BANTUAN SINGKATAN (BARU DITAMBAHKAN) -->
+    <!-- ============================================== -->
+    <div id="modalBantuan" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg w-[400px] shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <span class="bg-blue-100 text-blue-700 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">?</span>
+                    Bantuan Singkatan
+                </h2>
+                <button onclick="tutupModalBantuan()" class="text-gray-400 hover:text-red-600 text-2xl font-bold leading-none">&times;</button>
+            </div>
+            
+            <div class="space-y-3 text-sm text-gray-700">
+                <p><strong class="inline-block w-10 text-gray-900 bg-gray-100 text-center rounded">AW</strong> = Stok Awal / SIV</p>
+                <p><strong class="inline-block w-10 text-gray-900 bg-gray-100 text-center rounded">TB</strong> = Tambah Stok</p>
+                <p><strong class="inline-block w-10 text-gray-900 bg-gray-100 text-center rounded">TTL</strong> = Total Stok Sebelum Penjualan</p>
+                <p><strong class="inline-block w-10 text-red-700 bg-red-100 text-center rounded">AH</strong> = Total Stok Setelah Penjualan / Tutup Buku</p>
+                <p><strong class="inline-block w-10 text-blue-700 bg-blue-100 text-center rounded">TR</strong> = Stok Awal dikurangi stok akhir, menjadi penjualan (Terjual)</p>
+                <p><strong class="inline-block w-10 text-green-700 bg-green-100 text-center rounded">H</strong> = Harga Jual</p>
+                <p><strong class="inline-block w-10 text-green-700 bg-green-100 text-center rounded">JML</strong> = Hasil Kali Penjualan Dan Harga (Total)</p>
+            </div>
+
+            <div class="mt-6 pt-4 border-t text-right">
+                <button onclick="tutupModalBantuan()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded text-sm font-bold shadow transition">Tutup Panduan</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL EDIT TRANSAKSI -->
-    <div id="modalEdit" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50 transition-opacity">
-        <div class="bg-white p-6 rounded-lg w-96 shadow-2xl transform transition-all">
+    <div id="modalEdit" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg w-96 shadow-2xl">
             <h2 class="text-lg font-bold mb-4 text-gray-800 border-b pb-2">Edit Transaksi</h2>
             <form action="/edit-transaksi" method="POST" class="space-y-4">
                 <input type="hidden" name="id" id="editId">
@@ -204,27 +268,26 @@
                 <div class="grid grid-cols-3 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-blue-600 mb-1">Awal (AW)</label>
-                        <input type="number" name="aw" id="editAw" class="w-full p-2 border rounded text-sm bg-yellow-50 focus:ring-blue-400" required>
+                        <input type="number" name="aw" id="editAw" class="w-full p-2 border rounded text-sm bg-yellow-50" required>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">Tambah (TB)</label>
-                        <input type="number" name="tb" id="editTb" class="w-full p-2 border rounded text-sm focus:ring-blue-400" required>
+                        <input type="number" name="tb" id="editTb" class="w-full p-2 border rounded text-sm" required>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-red-600 mb-1">Sisa (AH)</label>
-                        <input type="number" name="ah" id="editAh" class="w-full p-2 border rounded text-sm bg-red-50 focus:ring-blue-400" required>
+                        <input type="number" name="ah" id="editAh" class="w-full p-2 border rounded text-sm bg-red-50" required>
                     </div>
                 </div>
                 <div class="flex justify-end gap-2 mt-6 pt-4 border-t">
-                    <button type="button" onclick="tutupModalEdit()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm shadow transition">Batal</button>
-                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 font-bold text-white px-4 py-2 rounded text-sm shadow transition">Simpan Perubahan</button>
+                    <button type="button" onclick="tutupModalEdit()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm">Batal</button>
+                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 font-bold text-white px-4 py-2 rounded text-sm">Simpan Perubahan</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        // LOGIKA AUTO FILL STOK DENGAN JSON.PARSE (ANTI WARNING VS CODE)
         const masterStok = JSON.parse(`<%- JSON.stringify(masterStok || {}) %>`);
         const produkSelect = document.getElementById('produkSelect');
         const stokAwalInput = document.getElementById('stokAwalInput');
@@ -236,7 +299,6 @@
         produkSelect.addEventListener('change', updateStokAwalOtomatis);
         window.addEventListener('DOMContentLoaded', updateStokAwalOtomatis);
 
-        // LOGIKA CRUD KATALOG
         async function hapusKatalog(kategori, brand, produkString) {
             if (confirm(`Hapus "${produkString}" dari katalog?`)) {
                 const response = await fetch('/katalog/hapus', {
@@ -248,9 +310,16 @@
             }
         }
 
-        // LOGIKA EDIT & HAPUS TRANSAKSI
-        const modalEdit = document.getElementById('modalEdit');
+        // KODE LOGIKA MODAL BANTUAN SINGKATAN (BARU DITAMBAHKAN)
+        const modalBantuan = document.getElementById('modalBantuan');
+        function bukaModalBantuan() {
+            modalBantuan.classList.remove('hidden');
+        }
+        function tutupModalBantuan() {
+            modalBantuan.classList.add('hidden');
+        }
 
+        const modalEdit = document.getElementById('modalEdit');
         function bukaModalEdit(id, produk, aw, tb, ah) {
             document.getElementById('editId').value = id;
             document.getElementById('editProduk').value = produk;
@@ -259,7 +328,6 @@
             document.getElementById('editAh').value = ah;
             modalEdit.classList.remove('hidden');
         }
-
         function tutupModalEdit() {
             modalEdit.classList.add('hidden');
         }

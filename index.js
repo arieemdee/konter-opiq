@@ -51,19 +51,32 @@ function readKatalog() {
 }
 function writeKatalog(data) { fs.writeFileSync(katalogPath, JSON.stringify(data, null, 2), 'utf8'); }
 
-
 // ==========================================
-// ROUTES UTAMA & TRANSAKSI
+// ROUTES UTAMA (DEFAULT: BULAN SEKARANG)
 // ==========================================
 app.get('/', (req, res) => {
     const db = readDB();
     const katalog = readKatalog();
-    const { bulan } = req.query;
     
-    let transaksiFiltered = db.transaksi;
-    if (bulan) {
-        transaksiFiltered = db.transaksi.filter(t => t.tanggal.startsWith(bulan));
+    // Dapatkan string bulan saat ini (Format: YYYY-MM)
+    const today = new Date();
+    const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+    let { bulanAwal, bulanAkhir } = req.query;
+    
+    // Jika pertama kali buka (Query kosong), otomatis set ke bulan sekarang (Tgl 1 s/d Akhir Bulan)
+    if (Object.keys(req.query).length === 0) {
+        bulanAwal = currentMonth;
+        bulanAkhir = currentMonth;
     }
+
+    // Filter transaksi berdasarkan rentang string kronologis
+    const transaksiFiltered = db.transaksi.filter(t => {
+        const tBulan = t.tanggal.substring(0, 7);
+        const matchesAwal = bulanAwal ? tBulan >= bulanAwal : true;
+        const matchesAkhir = bulanAkhir ? tBulan <= bulanAkhir : true;
+        return matchesAwal && matchesAkhir;
+    });
 
     const grandTotal = transaksiFiltered.reduce((sum, item) => sum + item.jml, 0);
 
@@ -71,7 +84,8 @@ app.get('/', (req, res) => {
         katalog: katalog, 
         transaksi: transaksiFiltered, 
         masterStok: db.masterStok,
-        filterBulan: bulan || '',
+        filterBulanAwal: bulanAwal || '',
+        filterBulanAkhir: bulanAkhir || '',
         grandTotal: grandTotal
     });
 });
@@ -111,6 +125,8 @@ app.post('/tambah-transaksi', (req, res) => {
 
 app.post('/tutup-buku', (req, res) => {
     const { bulanTutup } = req.body;
+    if (!bulanTutup) return res.send("<script>alert('Pilih bulan yang ingin ditutup!'); window.location='/';</script>");
+
     const db = readDB();
     let count = 0;
     db.transaksi = db.transaksi.map(t => {
@@ -120,12 +136,9 @@ app.post('/tutup-buku', (req, res) => {
         return t;
     });
     writeDB(db);
-    res.send(`<script>alert('Berhasil Tutup Buku! ${count} transaksi bulan ${bulanTutup} dikunci.'); window.location='/?bulan=${bulanTutup}';</script>`);
+    res.send(`<script>alert('Berhasil Tutup Buku! ${count} transaksi bulan ${bulanTutup} dikunci.'); window.location='/?bulanAwal=${bulanTutup}&bulanAkhir=${bulanTutup}';</script>`);
 });
 
-// ==========================================
-// FITUR BARU: EDIT & HAPUS TRANSAKSI
-// ==========================================
 app.post('/edit-transaksi', (req, res) => {
     const { id, aw, tb, ah } = req.body;
     const db = readDB();
@@ -143,7 +156,7 @@ app.post('/edit-transaksi', (req, res) => {
         
         t.jml = t.tr * t.harga;
         db.transaksi[index] = t;
-        db.masterStok[t.produk] = t.ah; // Sinkronisasi ulang master stok terbaru
+        db.masterStok[t.produk] = t.ah; 
         writeDB(db);
     }
     res.redirect(req.get('Referrer') || '/');
@@ -157,9 +170,6 @@ app.post('/hapus-transaksi', (req, res) => {
     res.json({ success: true });
 });
 
-// ==========================================
-// ROUTES CRUD KATALOG
-// ==========================================
 app.post('/katalog/tambah', (req, res) => {
     let { kategori, brand, nama_item, harga_k } = req.body;
     kategori = kategori.trim().toUpperCase();
