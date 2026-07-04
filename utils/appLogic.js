@@ -193,9 +193,15 @@ function pruneTransactionsByDate(dbData, startDate, endDate) {
   return { success: true, deletedCount, data: updatedData };
 }
 
-function buildExcelRows(transaksi) {
+function buildExcelRows(transaksi, { bulanAwal = '', bulanAkhir = '', grandTotal = 0 } = {}) {
   const header = ['Tanggal', 'Produk', 'AW', 'TB', 'TTL', 'AH', 'TR', 'JML', 'Status'];
-  const rows = [header];
+  const rows = [];
+
+  rows.push(['LAPORAN PENJUALAN KONTER']);
+  rows.push(['']);
+  rows.push([`Periode: ${bulanAwal || 'Mulai Awal'} s/d ${bulanAkhir || 'Sekarang'}`]);
+  rows.push(['']);
+  rows.push(header);
 
   (transaksi || []).forEach((item) => {
     rows.push([
@@ -210,6 +216,10 @@ function buildExcelRows(transaksi) {
       item.status || ''
     ]);
   });
+
+  rows.push(['']);
+  rows.push(['TOTAL GRAND TOTAL']);
+  rows.push([`Rp ${grandTotal}.000`]);
 
   return rows;
 }

@@ -308,7 +308,8 @@ app.get('/export-excel', (req, res) => {
         return matchesAwal && matchesAkhir;
     });
 
-    const rows = buildExcelRows(transaksiFiltered);
+    const grandTotal = transaksiFiltered.reduce((sum, item) => sum + item.jml, 0);
+    const rows = buildExcelRows(transaksiFiltered, { bulanAwal, bulanAkhir, grandTotal });
     const worksheet = XLSX.utils.aoa_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Penjualan');
