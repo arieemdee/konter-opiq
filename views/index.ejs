@@ -9,7 +9,6 @@
 <body class="bg-gray-100 font-sans text-gray-800">
 
     <div class="container mx-auto p-6 max-w-7xl">
-        <!-- Header -->
         <header class="bg-blue-600 text-white p-6 rounded-lg shadow-md mb-6 flex justify-between items-center">
             <div>
                 <h1 class="text-3xl font-bold">REKAP PEMBUKUAN KONTER OPIQ</h1>
@@ -23,15 +22,14 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <!-- SISI KIRI: MANAGEMENT FORMS -->
+            <!-- SISI KIRI: FORMS -->
             <div class="space-y-6">
-                
-                <!-- FORM 1: INPUT TRANSAKSI HARIAN -->
+                <!-- FORM INPUT -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-lg font-bold border-b pb-2 mb-4 text-gray-700">Form Input Harian</h2>
                     <form action="/tambah-transaksi" method="POST" class="space-y-4">
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Pilih Produk (Dari katalog.json)</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Pilih Produk</label>
                             <select name="produk" id="produkSelect" required class="w-full p-2 border rounded bg-gray-50 focus:ring-2 focus:ring-blue-400 text-sm">
                                 <% for (const [kategori, sub] of Object.entries(katalog)) { %>
                                     <optgroup label="--- <%= kategori %> ---">
@@ -44,35 +42,31 @@
                                 <% } %>
                             </select>
                         </div>
-
                         <div class="grid grid-cols-3 gap-2">
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1 text-blue-600 font-bold">Awal (AW)</label>
-                                <input type="number" name="aw" id="stokAwalInput" min="0" value="0" class="w-full p-2 border rounded bg-yellow-50 focus:ring-2 focus:ring-blue-400 text-sm font-bold">
+                                <input type="number" name="aw" id="stokAwalInput" min="0" value="0" class="w-full p-2 border rounded bg-yellow-50 font-bold">
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Tambah (TB)</label>
-                                <input type="number" name="tb" min="0" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 text-sm">
+                                <input type="number" name="tb" min="0" value="0" class="w-full p-2 border rounded">
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1 text-red-600 font-bold">Sisa (AH)</label>
-                                <input type="number" name="ah" min="0" value="0" class="w-full p-2 border rounded bg-red-50 focus:ring-2 focus:ring-blue-400 text-sm font-bold" required>
+                                <input type="number" name="ah" min="0" value="0" class="w-full p-2 border rounded bg-red-50 font-bold" required>
                             </div>
                         </div>
-                        <p class="text-[10px] text-gray-400 italic">*Tips: Nilai Sisa (AH) harus lebih kecil dari (AW + TB) agar terhitung ada penjualan.</p>
-
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded text-sm transition shadow">
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded text-sm shadow">
                             Simpan Transaksi
                         </button>
                     </form>
                 </div>
 
-                <!-- FORM 2: CRUD KATALOG (TAMBAH ITEM BARU) -->
+                <!-- FORM KATALOG -->
                 <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-emerald-500">
-                    <h2 class="text-lg font-bold border-b pb-2 mb-4 text-emerald-700">⚙️ Pengaturan Katalog Produk</h2>
+                    <h2 class="text-lg font-bold border-b pb-2 mb-4 text-emerald-700">⚙️ Tambah Katalog</h2>
                     <form action="/katalog/tambah" method="POST" class="space-y-3">
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-0.5">Kategori Utama</label>
                             <select name="kategori" class="w-full p-2 border rounded text-xs">
                                 <option value="DATA UTAMA">DATA UTAMA</option>
                                 <option value="DATA MINI / MINGGUAN">DATA MINI / MINGGUAN</option>
@@ -81,79 +75,53 @@
                             </select>
                         </div>
                         <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-0.5">Brand/Provider</label>
-                                <input type="text" name="brand" placeholder="Contoh: TELKOMSEL" required class="w-full p-2 border rounded text-xs uppercase">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-0.5">Harga Jual (Ribu)</label>
-                                <input type="number" name="harga_k" placeholder="Contoh: 30" required class="w-full p-2 border rounded text-xs">
-                            </div>
+                            <input type="text" name="brand" placeholder="Brand: TELKOMSEL" required class="w-full p-2 border rounded text-xs uppercase">
+                            <input type="number" name="harga_k" placeholder="Harga (Ribu): 30" required class="w-full p-2 border rounded text-xs">
                         </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-0.5">Nama Varian Paket / Item</label>
-                            <input type="text" name="nama_item" placeholder="Contoh: S 6GB atau KABEL M" required class="w-full p-2 border rounded text-xs">
-                        </div>
-                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-1.5 rounded text-xs transition">
-                            ＋ Tambahkan ke Katalog.json
-                        </button>
+                        <input type="text" name="nama_item" placeholder="Varian: S 6GB" required class="w-full p-2 border rounded text-xs">
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 rounded text-xs">＋ Tambahkan</button>
                     </form>
                 </div>
 
-                <!-- SELEKTOR BULAN & TUTUP BUKU -->
+                <!-- FORM FILTER -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
-                    <h3 class="font-bold text-gray-700 mb-2 text-sm">Filter & Tutup Buku Bulanan</h3>
                     <form action="/" method="GET" class="flex gap-2 mb-4">
                         <input type="month" name="bulan" value="<%= filterBulan %>" class="p-2 border rounded text-xs w-full">
-                        <button type="submit" class="bg-gray-700 text-white px-3 py-2 rounded text-xs hover:bg-gray-800">Filter</button>
-                        <% if(filterBulan) { %>
-                            <a href="/" class="bg-red-500 text-white px-2 py-2 rounded text-xs flex items-center">Reset</a>
-                        <% } %>
+                        <button type="submit" class="bg-gray-700 text-white px-3 py-2 rounded text-xs">Filter</button>
+                        <% if(filterBulan) { %><a href="/" class="bg-red-500 text-white px-2 py-2 rounded text-xs flex items-center">Reset</a><% } %>
                     </form>
-
                     <% if(filterBulan) { %>
                         <form action="/tutup-buku" method="POST" onsubmit="return confirm('Kunci semua transaksi bulan ini?')">
                             <input type="hidden" name="bulanTutup" value="<%= filterBulan %>">
-                            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-semibold py-2 rounded transition">
-                                🔒 Tutup Buku Bulan <%= filterBulan %>
-                            </button>
+                            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs py-2 rounded">🔒 Tutup Buku <%= filterBulan %></button>
                         </form>
-                    <% } else { %>
-                        <p class="text-xs text-red-500 italic bg-red-50 p-2 rounded text-center">Pilih filter bulan untuk mengaktifkan Tutup Buku.</p>
                     <% } %>
                 </div>
-
             </div>
 
-            <!-- SISI KANAN: TABEL REKAP/TRANSAKSI (2 KOLOM) -->
+            <!-- SISI KANAN: TABEL TRANSAKSI -->
             <div class="space-y-6 lg:col-span-2">
                 <div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold text-gray-700">
-                            Laporan Penjualan <%= filterBulan ? `(${filterBulan})` : '(Semua Waktu)' %>
-                        </h2>
-                    </div>
-
+                    <h2 class="text-xl font-bold text-gray-700 mb-4">Laporan Penjualan <%= filterBulan ? `(${filterBulan})` : '(Semua Waktu)' %></h2>
+                    
                     <table class="w-full text-left border-collapse text-xs">
                         <thead>
-                            <tr class="bg-gray-100 text-gray-600 uppercase text-xs border-b">
+                            <tr class="bg-gray-100 text-gray-600 uppercase border-b">
                                 <th class="p-3">Tanggal</th>
-                                <th class="p-3">Item/Produk</th>
+                                <th class="p-3">Produk</th>
                                 <th class="p-3 text-center">AW</th>
                                 <th class="p-3 text-center">TB</th>
                                 <th class="p-3 text-center">TTL</th>
-                                <th class="p-3 text-center">AH (Sisa)</th>
-                                <th class="p-3 text-center bg-blue-50 text-blue-700">TR (Laku)</th>
-                                <th class="p-3 text-right">Harga</th>
-                                <th class="p-3 text-right bg-green-50 text-green-700 font-bold">Total (JML)</th>
+                                <th class="p-3 text-center">AH</th>
+                                <th class="p-3 text-center bg-blue-50 text-blue-700">TR</th>
+                                <th class="p-3 text-right font-bold bg-green-50 text-green-700">JML</th>
                                 <th class="p-3 text-center">Status</th>
+                                <th class="p-3 text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y">
                             <% if (transaksi.length === 0) { %>
-                                <tr>
-                                    <td colspan="10" class="p-8 text-center text-gray-400 italic">Belum ada data penjualan tercatat.</td>
-                                </tr>
+                                <tr><td colspan="10" class="p-8 text-center text-gray-400 italic">Belum ada data.</td></tr>
                             <% } else { %>
                                 <% transaksi.forEach(t => { %>
                                     <tr class="hover:bg-gray-50 transition">
@@ -164,24 +132,40 @@
                                         <td class="p-3 text-center text-gray-600"><%= t.ttl %></td>
                                         <td class="p-3 text-center text-gray-600"><%= t.ah %></td>
                                         <td class="p-3 text-center bg-blue-50 text-blue-700 font-semibold"><%= t.tr %></td>
-                                        <td class="p-3 text-right text-gray-600">Rp <%= t.harga %>.000</td>
                                         <td class="p-3 text-right bg-green-50 text-green-700 font-bold">Rp <%= t.jml %>.000</td>
                                         <td class="p-3 text-center">
-                                            <span class="px-2 py-0.5 text-xs rounded-full <%= t.status === 'Aktif' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
-                                                <%= t.status %>
-                                            </span>
+                                            <span class="px-2 py-0.5 text-[10px] rounded-full <%= t.status === 'Aktif' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>"><%= t.status %></span>
+                                        </td>
+                                        <td class="p-3 text-center flex justify-center gap-1">
+                                            <% if(t.status === 'Aktif') { %>
+                                                <button onclick="bukaModalEdit(<%= t.id %>, '<%= t.produk %>', <%= t.aw %>, <%= t.tb %>, <%= t.ah %>)" class="bg-yellow-400 hover:bg-yellow-500 text-white px-2 py-1 rounded shadow-sm text-[10px] font-bold">Edit</button>
+                                                <button onclick="hapusTransaksi(<%= t.id %>)" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded shadow-sm text-[10px] font-bold">Del</button>
+                                            <% } else { %>
+                                                <span class="text-[10px] text-gray-400 italic">Terkunci</span>
+                                            <% } %>
                                         </td>
                                     </tr>
                                 <% }) %>
                             <% } %>
                         </tbody>
+                        
+                        <!-- BARIS BARU: SUB TOTAL DI BAWAH KOLOM JML -->
+                        <% if (transaksi.length > 0) { %>
+                            <tfoot class="border-t-2 border-gray-300">
+                                <tr class="bg-gray-50 font-bold text-gray-700">
+                                    <td colspan="7" class="p-3 text-right uppercase text-xs tracking-wider">Sub Total / Total Terfilter:</td>
+                                    <td class="p-3 text-right bg-green-100 text-green-800 font-extrabold text-sm whitespace-nowrap">Rp <%= grandTotal %>.000</td>
+                                    <td colspan="2" class="p-3 bg-gray-50"></td>
+                                </tr>
+                            </tfoot>
+                        <% } %>
                     </table>
                 </div>
 
-                <!-- INDIKATOR DAFTAR KATALOG AKTIF -->
+                <!-- DAFTAR KATALOG -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h3 class="text-base font-bold text-gray-700 mb-3 border-b pb-2">📋 Laporan Data Produk Aktif (Bisa Dihapus)</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto pr-2 text-xs">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-40 overflow-y-auto pr-2 text-xs">
                         <% for (const [kategori, sub] of Object.entries(katalog)) { %>
                             <div class="bg-gray-50 p-3 rounded border">
                                 <h4 class="font-bold text-blue-600 mb-1 text-xs"><%= kategori %></h4>
@@ -207,28 +191,52 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT LOGIC AUTO FILL STOK AWAL -->
+    <!-- MODAL EDIT TRANSAKSI -->
+    <div id="modalEdit" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50 transition-opacity">
+        <div class="bg-white p-6 rounded-lg w-96 shadow-2xl transform transition-all">
+            <h2 class="text-lg font-bold mb-4 text-gray-800 border-b pb-2">Edit Transaksi</h2>
+            <form action="/edit-transaksi" method="POST" class="space-y-4">
+                <input type="hidden" name="id" id="editId">
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Nama Produk</label>
+                    <input type="text" id="editProduk" disabled class="w-full p-2 border rounded bg-gray-100 text-sm font-semibold text-gray-600">
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-600 mb-1">Awal (AW)</label>
+                        <input type="number" name="aw" id="editAw" class="w-full p-2 border rounded text-sm bg-yellow-50 focus:ring-blue-400" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">Tambah (TB)</label>
+                        <input type="number" name="tb" id="editTb" class="w-full p-2 border rounded text-sm focus:ring-blue-400" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-red-600 mb-1">Sisa (AH)</label>
+                        <input type="number" name="ah" id="editAh" class="w-full p-2 border rounded text-sm bg-red-50 focus:ring-blue-400" required>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 mt-6 pt-4 border-t">
+                    <button type="button" onclick="tutupModalEdit()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm shadow transition">Batal</button>
+                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 font-bold text-white px-4 py-2 rounded text-sm shadow transition">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // Membaca masterStok dari backend Express secara langsung ke client browser
-        const masterStok = <%- JSON.stringify(masterStok || {}) %>;
+        // LOGIKA AUTO FILL STOK DENGAN JSON.PARSE (ANTI WARNING VS CODE)
+        const masterStok = JSON.parse(`<%- JSON.stringify(masterStok || {}) %>`);
         const produkSelect = document.getElementById('produkSelect');
         const stokAwalInput = document.getElementById('stokAwalInput');
 
         function updateStokAwalOtomatis() {
             const produkTerpilih = produkSelect.value;
-            // Jika produk ini pernah diinput sebelumnya, ambil nilai sisa (AH) terakhirnya sebagai Stok Awal hari ini
-            if (masterStok && masterStok[produkTerpilih] !== undefined) {
-                stokAwalInput.value = masterStok[produkTerpilih];
-            } else {
-                stokAwalInput.value = 0; // default jika benar-benar produk baru gres
-            }
+            stokAwalInput.value = (masterStok && masterStok[produkTerpilih] !== undefined) ? masterStok[produkTerpilih] : 0;
         }
-
-        // Pemicu saat dropdown diganti atau saat halaman baru saja dibuka
         produkSelect.addEventListener('change', updateStokAwalOtomatis);
         window.addEventListener('DOMContentLoaded', updateStokAwalOtomatis);
 
-        // Fungsi Hapus Katalog
+        // LOGIKA CRUD KATALOG
         async function hapusKatalog(kategori, brand, produkString) {
             if (confirm(`Hapus "${produkString}" dari katalog?`)) {
                 const response = await fetch('/katalog/hapus', {
@@ -236,12 +244,34 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ kategori, brand, produkString })
                 });
-                const result = await response.json();
-                if (result.success) {
-                    window.location.reload();
-                } else {
-                    alert('Gagal menghapus produk!');
-                }
+                if ((await response.json()).success) window.location.reload();
+            }
+        }
+
+        // LOGIKA EDIT & HAPUS TRANSAKSI
+        const modalEdit = document.getElementById('modalEdit');
+
+        function bukaModalEdit(id, produk, aw, tb, ah) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editProduk').value = produk;
+            document.getElementById('editAw').value = aw;
+            document.getElementById('editTb').value = tb;
+            document.getElementById('editAh').value = ah;
+            modalEdit.classList.remove('hidden');
+        }
+
+        function tutupModalEdit() {
+            modalEdit.classList.add('hidden');
+        }
+
+        async function hapusTransaksi(id) {
+            if (confirm("Apakah Anda yakin ingin menghapus data penjualan ini secara permanen?")) {
+                const response = await fetch('/hapus-transaksi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                if ((await response.json()).success) window.location.reload();
             }
         }
     </script>

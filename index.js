@@ -4,32 +4,21 @@ const path = require('path');
 const app = express();
 const PORT = 3000;
 
-// Middleware
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// ==========================================
-// PENGATURAN PATH DATABASE & KATALOG (PKG)
-// ==========================================
+// PENGATURAN PATH DATABASE (PKG)
 const isCompiled = typeof process.pkg !== 'undefined';
 const basePath = isCompiled ? path.dirname(process.execPath) : __dirname;
 const dbFolder = path.join(basePath, 'data');
 const dbPath = path.join(dbFolder, 'database.json');
 const katalogPath = path.join(dbFolder, 'katalog.json');
 
-// Pastikan folder data ada
-if (!fs.existsSync(dbFolder)) {
-    fs.mkdirSync(dbFolder, { recursive: true });
-}
+if (!fs.existsSync(dbFolder)) fs.mkdirSync(dbFolder, { recursive: true });
+if (!fs.existsSync(dbPath)) fs.writeFileSync(dbPath, JSON.stringify({ transaksi: [], masterStok: {} }, null, 2), 'utf8');
 
-// Inisialisasi Database Transaksi default jika belum ada
-if (!fs.existsSync(dbPath)) {
-    fs.writeFileSync(dbPath, JSON.stringify({ transaksi: [], masterStok: {} }, null, 2), 'utf8');
-}
-
-// Inisialisasi Katalog default jika belum ada
 const katalogDefault = {
     "DATA UTAMA": {
         "TELKOMSEL": ["S 6GB (30k)", "B 3GB (15k)", "B 7GB (30k)"],
@@ -44,11 +33,8 @@ const katalogDefault = {
     }
 };
 
-if (!fs.existsSync(katalogPath)) {
-    fs.writeFileSync(katalogPath, JSON.stringify(katalogDefault, null, 2), 'utf8');
-}
+if (!fs.existsSync(katalogPath)) fs.writeFileSync(katalogPath, JSON.stringify(katalogDefault, null, 2), 'utf8');
 
-// Helper Baca / Tulis File JSON
 function readDB() {
     try {
         const rawData = fs.readFileSync(dbPath, 'utf8');
@@ -67,10 +53,8 @@ function writeKatalog(data) { fs.writeFileSync(katalogPath, JSON.stringify(data,
 
 
 // ==========================================
-// ROUTES APLIKASI
+// ROUTES UTAMA & TRANSAKSI
 // ==========================================
-
-// 1. Tampilan Utama GUI
 app.get('/', (req, res) => {
     const db = readDB();
     const katalog = readKatalog();
@@ -92,13 +76,12 @@ app.get('/', (req, res) => {
     });
 });
 
-// 2. Input Transaksi Harian Baru
 app.post('/tambah-transaksi', (req, res) => {
     const { produk, aw, tb, ah } = req.body;
     const db = readDB();
 
     const namaProduk = produk;
-    const hargaMatch = produk.match(/\((\d+)k\)/);
+    const hargaMatch = produk.match(/\((\d+)[kK]?\)/);
     const harga = hargaMatch ? parseInt(hargaMatch[1]) : 0;
 
     const stokAwal = parseInt(aw) || 0;
@@ -109,9 +92,7 @@ app.post('/tambah-transaksi', (req, res) => {
     const tr = ttl - stokAkhir;
     const jml = tr * harga;
 
-    if (tr < 0) {
-        return res.send("<script>alert('Stok akhir tidak boleh lebih besar dari Total Stok!'); window.location='/';</script>");
-    }
+    if (tr < 0) return res.send("<script>alert('Stok akhir (AH) tidak boleh lebih besar dari Total Stok!'); window.location='/';</script>");
 
     const tanggalHariIni = new Date().toISOString().split('T')[0];
 
@@ -119,13 +100,7 @@ app.post('/tambah-transaksi', (req, res) => {
         id: Date.now(),
         tanggal: tanggalHariIni,
         produk: namaProduk,
-        aw: stokAwal,
-        tb: tambahStok,
-        ttl: ttl,
-        ah: stokAkhir,
-        tr: tr,
-        harga: harga,
-        jml: jml,
+        aw: stokAwal, tb: tambahStok, ttl: ttl, ah: stokAkhir, tr: tr, harga: harga, jml: jml,
         status: "Aktif"
     });
     
@@ -134,83 +109,91 @@ app.post('/tambah-transaksi', (req, res) => {
     res.redirect('/');
 });
 
-// 3. Fitur Tutup Buku Bulanan
 app.post('/tutup-buku', (req, res) => {
     const { bulanTutup } = req.body;
     const db = readDB();
-
     let count = 0;
     db.transaksi = db.transaksi.map(t => {
         if (t.tanggal.startsWith(bulanTutup) && t.status === "Aktif") {
-            count++;
-            return { ...t, status: "Tutup Buku" };
+            count++; return { ...t, status: "Tutup Buku" };
         }
         return t;
     });
-
     writeDB(db);
-    res.send(`<script>alert('Berhasil Tutup Buku! ${count} transaksi bulan ${bulanTutup} telah dikunci.'); window.location='/?bulan=${bulanTutup}';</script>`);
+    res.send(`<script>alert('Berhasil Tutup Buku! ${count} transaksi bulan ${bulanTutup} dikunci.'); window.location='/?bulan=${bulanTutup}';</script>`);
 });
 
+// ==========================================
+// FITUR BARU: EDIT & HAPUS TRANSAKSI
+// ==========================================
+app.post('/edit-transaksi', (req, res) => {
+    const { id, aw, tb, ah } = req.body;
+    const db = readDB();
+
+    const index = db.transaksi.findIndex(t => t.id === parseInt(id));
+    if (index !== -1) {
+        const t = db.transaksi[index];
+        t.aw = parseInt(aw) || 0;
+        t.tb = parseInt(tb) || 0;
+        t.ah = parseInt(ah) || 0;
+        t.ttl = t.aw + t.tb;
+        t.tr = t.ttl - t.ah;
+
+        if (t.tr < 0) return res.send("<script>alert('Gagal Edit! Stok Akhir (AH) melebih Total Stok.'); window.location='/';</script>");
+        
+        t.jml = t.tr * t.harga;
+        db.transaksi[index] = t;
+        db.masterStok[t.produk] = t.ah; // Sinkronisasi ulang master stok terbaru
+        writeDB(db);
+    }
+    res.redirect(req.get('Referrer') || '/');
+});
+
+app.post('/hapus-transaksi', (req, res) => {
+    const { id } = req.body;
+    const db = readDB();
+    db.transaksi = db.transaksi.filter(t => t.id !== parseInt(id));
+    writeDB(db);
+    res.json({ success: true });
+});
 
 // ==========================================
-// ROUTE CRUD KATALOG (FITUR BARU)
+// ROUTES CRUD KATALOG
 // ==========================================
-
-// Tambah / Update Produk ke Katalog
 app.post('/katalog/tambah', (req, res) => {
     let { kategori, brand, nama_item, harga_k } = req.body;
-    
     kategori = kategori.trim().toUpperCase();
     brand = brand.trim().toUpperCase();
     nama_item = nama_item.trim();
     harga_k = parseInt(harga_k) || 0;
 
-    if (!kategori || !brand || !nama_item || harga_k <= 0) {
-        return res.send("<script>alert('Semua data katalog harus diisi dengan benar!'); window.location='/';</script>");
-    }
+    if (!kategori || !brand || !nama_item || harga_k <= 0) return res.send("<script>alert('Data katalog tidak valid!'); window.location='/';</script>");
 
     const katalog = readKatalog();
-
-    // Pastikan kategori & brand ada di objek json
     if (!katalog[kategori]) katalog[kategori] = {};
     if (!katalog[kategori][brand]) katalog[kategori][brand] = [];
 
-    // Format string produk standar konter: "Nama Item (Xk)"
     const produkString = `${nama_item} (${harga_k}k)`;
-
-    // Cek duplikasi, jika belum ada baru dimasukkan
-    if (!katalog[kategori][brand].includes(produkString)) {
-        katalog[kategori][brand].push(produkString);
-    }
+    if (!katalog[kategori][brand].includes(produkString)) katalog[kategori][brand].push(produkString);
 
     writeKatalog(katalog);
-    res.send("<script>alert('Produk baru berhasil ditambahkan ke katalog.json!'); window.location='/';</script>");
+    res.redirect('/');
 });
 
-// Hapus Produk dari Katalog
 app.post('/katalog/hapus', (req, res) => {
     const { kategori, brand, produkString } = req.body;
     const katalog = readKatalog();
 
     if (katalog[kategori] && katalog[kategori][brand]) {
         katalog[kategori][brand] = katalog[kategori][brand].filter(p => p !== produkString);
-        
-        // Bersihkan objek jika brand/kategori tersebut menjadi kosong
         if (katalog[kategori][brand].length === 0) delete katalog[kategori][brand];
         if (Object.keys(katalog[kategori]).length === 0) delete katalog[kategori];
-
         writeKatalog(katalog);
         return res.json({ success: true });
     }
-    res.json({ success: false, message: "Produk tidak ditemukan" });
+    res.json({ success: false });
 });
 
-
-// Jalankan Server
 app.listen(PORT, () => {
-    console.log(`===================================================`);
-    console.log(`🚀 GUI Pembukuan Konter Terhubung ke katalog.json!`);
-    console.log(`🌐 Alamat Aplikasi: http://localhost:${PORT}`);
-    console.log(`===================================================`);
+    console.log(`🚀 GUI Pembukuan Berjalan di http://localhost:${PORT}`);
 });
