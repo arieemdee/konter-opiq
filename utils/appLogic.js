@@ -224,6 +224,53 @@ function buildExcelRows(transaksi, { bulanAwal = '', bulanAkhir = '', grandTotal
   return rows;
 }
 
+function buildLaporanSummary(transaksi = [], { bulanAwal = '', bulanAkhir = '' } = {}) {
+  const filtered = (transaksi || []).filter((item) => {
+    const itemMonth = item.tanggal ? item.tanggal.substring(0, 7) : '';
+    const matchesAwal = bulanAwal ? itemMonth >= bulanAwal : true;
+    const matchesAkhir = bulanAkhir ? itemMonth <= bulanAkhir : true;
+    return matchesAwal && matchesAkhir;
+  });
+
+  const totalPenjualan = filtered.reduce((sum, item) => sum + (Number(item.jml) || 0), 0);
+  const produkMap = new Map();
+
+  filtered.forEach((item) => {
+    const produk = item.produk || 'Tidak Diketahui';
+    const current = produkMap.get(produk) || { nama: produk, terjual: 0, omzet: 0 };
+    current.terjual += Number(item.tr) || 0;
+    current.omzet += Number(item.jml) || 0;
+    produkMap.set(produk, current);
+  });
+
+  const produkTerlaris = Array.from(produkMap.values()).sort((a, b) => b.terjual - a.terjual)[0] || { nama: '-', terjual: 0, omzet: 0 };
+
+  const dailyMap = new Map();
+  filtered.forEach((item) => {
+    const date = item.tanggal || 'Tidak Ada';
+    const current = dailyMap.get(date) || { label: date, omzet: 0, transaksi: 0 };
+    current.omzet += Number(item.jml) || 0;
+    current.transaksi += 1;
+    dailyMap.set(date, current);
+  });
+
+  const dailyChart = Array.from(dailyMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+  const monthLabel = bulanAwal || bulanAkhir || 'Semua Periode';
+
+  return {
+    totalPenjualan,
+    produkTerlaris,
+    dailyChart,
+    monthlyRows: [
+      {
+        label: monthLabel,
+        omzet: totalPenjualan,
+        transaksi: filtered.length
+      }
+    ]
+  };
+}
+
 module.exports = {
   parseProdukSelection,
   normalizeKatalogData,
@@ -236,5 +283,6 @@ module.exports = {
   buildBackupPayload,
   restoreFromBackup,
   pruneTransactionsByDate,
-  buildExcelRows
+  buildExcelRows,
+  buildLaporanSummary
 };

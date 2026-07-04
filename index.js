@@ -14,7 +14,8 @@ const {
     buildBackupPayload,
     restoreFromBackup,
     pruneTransactionsByDate,
-    buildExcelRows
+    buildExcelRows,
+    buildLaporanSummary
 } = require('./utils/appLogic');
 const app = express();
 const PORT = 3000;
@@ -133,6 +134,38 @@ app.get('/', (req, res) => {
         flashMessage: flashMessage,
         flashType: flashType,
         flashTitle: flashTitle
+    });
+});
+
+app.get('/laporan-summary', (req, res) => {
+    const db = readDB();
+    const katalog = readKatalog();
+    const today = new Date();
+    const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+    let { bulanAwal, bulanAkhir } = req.query;
+    if (!bulanAwal && !bulanAkhir) {
+        bulanAwal = currentMonth;
+        bulanAkhir = currentMonth;
+    }
+
+    const transaksiFiltered = db.transaksi.filter((t) => {
+        const tBulan = t.tanggal.substring(0, 7);
+        const matchesAwal = bulanAwal ? tBulan >= bulanAwal : true;
+        const matchesAkhir = bulanAkhir ? tBulan <= bulanAkhir : true;
+        return matchesAwal && matchesAkhir;
+    });
+
+    const summary = buildLaporanSummary(transaksiFiltered, { bulanAwal, bulanAkhir });
+    res.render('laporan-summary', {
+        katalog,
+        summary,
+        filterBulanAwal: bulanAwal || '',
+        filterBulanAkhir: bulanAkhir || '',
+        grandTotal: summary.totalPenjualan,
+        flashMessage: '',
+        flashType: 'info',
+        flashTitle: 'Informasi'
     });
 });
 
