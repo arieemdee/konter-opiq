@@ -8,7 +8,10 @@ const {
     resolveKategoriInput,
     validateTransaksiInput,
     validateKatalogInput,
-    deleteKategori
+    deleteKategori,
+    createBackupFileName,
+    buildBackupPayload,
+    restoreFromBackup
 } = require('./utils/appLogic');
 const app = express();
 const PORT = 3000;
@@ -252,6 +255,38 @@ app.post('/katalog/tambah', (req, res) => {
     katalog[resolvedKategori][brand].push({ nama: nama_item, harga: harga_k });
     writeKatalog(katalog);
     res.redirect(buildRedirectWithMessage('/', { message: 'Katalog berhasil ditambahkan.', type: 'success', title: 'Sukses' }));
+});
+
+app.post('/backup', (req, res) => {
+    const db = readDB();
+    const katalog = readKatalog();
+    const backupPayload = buildBackupPayload(db, katalog, 'database.json', 'katalog.json');
+    const backupFileName = createBackupFileName('backup.json');
+    const backupPath = path.join(dbFolder, backupFileName);
+    fs.writeFileSync(backupPath, JSON.stringify(backupPayload, null, 2), 'utf8');
+    res.json({ success: true, fileName: backupFileName, path: backupPath });
+});
+
+app.post('/restore', (req, res) => {
+    const { backupPath } = req.body;
+    if (!backupPath) {
+        return res.json({ success: false, message: 'File backup tidak ditemukan.' });
+    }
+
+    try {
+        const restored = restoreFromBackup(backupPath);
+        if (!restored || !restored.data) {
+            return res.json({ success: false, message: 'Format backup tidak valid.' });
+        }
+
+        const dbData = restored.data.database || { transaksi: [], masterStok: {} };
+        const katalogData = restored.data.katalog || {};
+        writeDB(dbData);
+        writeKatalog(katalogData);
+        return res.json({ success: true, message: 'Data berhasil dipulihkan.' });
+    } catch (error) {
+        return res.json({ success: false, message: 'Gagal memulihkan data: ' + error.message });
+    }
 });
 
 app.post('/katalog/hapus', (req, res) => {

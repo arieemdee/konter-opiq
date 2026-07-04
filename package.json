@@ -4,7 +4,8 @@
   "description": "Aplikasi Pembukuan Konter",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node --test"
   },
   "dependencies": {
     "ejs": "^3.1.10",

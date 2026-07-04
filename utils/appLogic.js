@@ -142,6 +142,32 @@ function deleteKategori(katalog, kategori) {
   return { success: true, katalog: normalized };
 }
 
+function createBackupFileName(fileName) {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return `backup_${stamp}_${fileName}`;
+}
+
+function buildBackupPayload(databaseData, katalogData, databaseFileName, katalogFileName) {
+  return {
+    exportedAt: new Date().toISOString(),
+    databaseFile: databaseFileName,
+    katalogFile: katalogFileName,
+    data: {
+      database: databaseData,
+      katalog: katalogData
+    }
+  };
+}
+
+function restoreFromBackup(filePath) {
+  const rawContent = require('fs').readFileSync(filePath, 'utf8');
+  const parsed = JSON.parse(rawContent);
+  return {
+    success: true,
+    data: parsed.data || parsed
+  };
+}
+
 module.exports = {
   parseProdukSelection,
   normalizeKatalogData,
@@ -149,5 +175,8 @@ module.exports = {
   resolveKategoriInput,
   validateTransaksiInput,
   validateKatalogInput,
-  deleteKategori
+  deleteKategori,
+  createBackupFileName,
+  buildBackupPayload,
+  restoreFromBackup
 };

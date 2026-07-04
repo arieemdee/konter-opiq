@@ -71,6 +71,16 @@
 
                 <!-- FORM TUTUP BUKU -->
                 <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-gray-700 text-sm">🗂️ Backup & Restore</h3>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="backupData()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded text-xs font-bold">Backup JSON</button>
+                        <button type="button" onclick="bukaModalRestore()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-bold">Restore JSON</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="font-bold text-gray-700 text-sm">🔒 Kunci Buku Bulanan</h3>
                         <!-- Tombol Help Baru -->
@@ -356,6 +366,24 @@
             </form>
         </div>
     </div>
+    <!-- MODAL RESTORE -->
+    <div id="modalRestore" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg w-[420px] shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-lg font-bold text-blue-700">Restore Data JSON</h2>
+                <button type="button" onclick="tutupModalRestore()" class="text-gray-400 hover:text-red-600 text-2xl font-bold leading-none">&times;</button>
+            </div>
+            <div class="space-y-3">
+                <p class="text-sm text-gray-600">Pilih file backup JSON yang tersimpan di folder data untuk mengembalikan data aplikasi.</p>
+                <input type="text" id="restorePathInput" placeholder="Contoh: data/backup_....json" class="w-full p-2 border rounded text-sm">
+            </div>
+            <div class="flex justify-end gap-2 mt-6 pt-4 border-t">
+                <button type="button" onclick="tutupModalRestore()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm">Batal</button>
+                <button type="button" onclick="restoreData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-bold">Pulihkan</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL INFO KUNCI BUKU -->
     <div id="modalInfoBuku" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50">
         <div class="bg-white p-6 rounded-lg w-[400px] shadow-2xl">
@@ -396,6 +424,8 @@
         const kategoriBaruWrap = document.getElementById('kategoriBaruWrap');
         const kategoriBaruInput = document.getElementById('kategoriBaruInput');
         const modalHelper = document.getElementById('modalHelper');
+        const modalRestore = document.getElementById('modalRestore');
+        const restorePathInput = document.getElementById('restorePathInput');
         const modalHelperTitle = document.getElementById('modalHelperTitle');
         const modalHelperMessage = document.getElementById('modalHelperMessage');
         const modalHelperIcon = document.getElementById('modalHelperIcon');
@@ -487,6 +517,45 @@
         }
 
         kategoriSelect.addEventListener('change', toggleKategoriBaru);
+
+        async function backupData() {
+            const response = await fetch('/backup', { method: 'POST' });
+            const result = await response.json();
+            if (result.success) {
+                bukaModalHelper({ title: 'Backup Berhasil', message: `File backup dibuat: ${result.fileName}`, type: 'success', confirmText: 'Tutup' });
+            } else {
+                bukaModalHelper({ title: 'Backup Gagal', message: result.message || 'Gagal membuat backup.', type: 'error', confirmText: 'Tutup' });
+            }
+        }
+
+        function bukaModalRestore() {
+            modalRestore.classList.remove('hidden');
+        }
+
+        function tutupModalRestore() {
+            modalRestore.classList.add('hidden');
+            restorePathInput.value = '';
+        }
+
+        async function restoreData() {
+            const backupPath = restorePathInput.value.trim();
+            if (!backupPath) {
+                bukaModalHelper({ title: 'Perhatian', message: 'Masukkan path file backup terlebih dahulu.', type: 'warning', confirmText: 'Tutup' });
+                return;
+            }
+            const response = await fetch('/restore', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ backupPath })
+            });
+            const result = await response.json();
+            if (result.success) {
+                bukaModalHelper({ title: 'Restore Berhasil', message: result.message || 'Data berhasil dipulihkan.', type: 'success', confirmText: 'Tutup' });
+                setTimeout(() => window.location.reload(), 700);
+            } else {
+                bukaModalHelper({ title: 'Restore Gagal', message: result.message || 'Gagal memulihkan data.', type: 'error', confirmText: 'Tutup' });
+            }
+        }
 
         async function hapusKatalog(kategori, brand, produkString) {
             bukaModalHelper({
