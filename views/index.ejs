@@ -75,8 +75,8 @@
                         <h3 class="font-bold text-gray-700 text-sm">🗂️ Backup & Restore</h3>
                     </div>
                     <div class="flex flex-wrap gap-2">
-                        <button type="button" onclick="backupData()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded text-xs font-bold">Backup JSON</button>
-                        <button type="button" onclick="bukaModalRestore()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-bold">Restore JSON</button>
+                        <button type="button" onclick="backupData()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded text-xs font-bold">Download Backup</button>
+                        <button type="button" onclick="bukaModalRestore()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-bold">Restore via File</button>
                     </div>
                 </div>
 
@@ -374,8 +374,8 @@
                 <button type="button" onclick="tutupModalRestore()" class="text-gray-400 hover:text-red-600 text-2xl font-bold leading-none">&times;</button>
             </div>
             <div class="space-y-3">
-                <p class="text-sm text-gray-600">Pilih file backup JSON yang tersimpan di folder data untuk mengembalikan data aplikasi.</p>
-                <input type="text" id="restorePathInput" placeholder="Contoh: data/backup_....json" class="w-full p-2 border rounded text-sm">
+                <p class="text-sm text-gray-600">Pilih file backup JSON dari komputer Anda untuk mengembalikan data aplikasi.</p>
+                <input type="file" id="restoreFileInput" accept=".json,application/json" class="w-full p-2 border rounded text-sm bg-gray-50">
             </div>
             <div class="flex justify-end gap-2 mt-6 pt-4 border-t">
                 <button type="button" onclick="tutupModalRestore()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm">Batal</button>
@@ -425,7 +425,7 @@
         const kategoriBaruInput = document.getElementById('kategoriBaruInput');
         const modalHelper = document.getElementById('modalHelper');
         const modalRestore = document.getElementById('modalRestore');
-        const restorePathInput = document.getElementById('restorePathInput');
+        const restoreFileInput = document.getElementById('restoreFileInput');
         const modalHelperTitle = document.getElementById('modalHelperTitle');
         const modalHelperMessage = document.getElementById('modalHelperMessage');
         const modalHelperIcon = document.getElementById('modalHelperIcon');
@@ -519,12 +519,26 @@
         kategoriSelect.addEventListener('change', toggleKategoriBaru);
 
         async function backupData() {
-            const response = await fetch('/backup', { method: 'POST' });
-            const result = await response.json();
-            if (result.success) {
-                bukaModalHelper({ title: 'Backup Berhasil', message: `File backup dibuat: ${result.fileName}`, type: 'success', confirmText: 'Tutup' });
-            } else {
-                bukaModalHelper({ title: 'Backup Gagal', message: result.message || 'Gagal membuat backup.', type: 'error', confirmText: 'Tutup' });
+            try {
+                const response = await fetch('/backup');
+                if (!response.ok) throw new Error('Gagal membuat backup');
+
+                const blob = await response.blob();
+                const disposition = response.headers.get('content-disposition') || '';
+                const match = disposition.match(/filename="?([^";]+)"?/i);
+                const filename = match ? match[1] : 'backup.json';
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(url);
+
+                bukaModalHelper({ title: 'Backup Berhasil', message: `File backup siap diunduh: ${filename}`, type: 'success', confirmText: 'Tutup' });
+            } catch (error) {
+                bukaModalHelper({ title: 'Backup Gagal', message: error.message || 'Gagal membuat backup.', type: 'error', confirmText: 'Tutup' });
             }
         }
 
@@ -534,19 +548,21 @@
 
         function tutupModalRestore() {
             modalRestore.classList.add('hidden');
-            restorePathInput.value = '';
+            restoreFileInput.value = '';
         }
 
         async function restoreData() {
-            const backupPath = restorePathInput.value.trim();
-            if (!backupPath) {
-                bukaModalHelper({ title: 'Perhatian', message: 'Masukkan path file backup terlebih dahulu.', type: 'warning', confirmText: 'Tutup' });
+            const file = restoreFileInput.files && restoreFileInput.files[0];
+            if (!file) {
+                bukaModalHelper({ title: 'Perhatian', message: 'Pilih file backup JSON terlebih dahulu.', type: 'warning', confirmText: 'Tutup' });
                 return;
             }
+
+            const text = await file.text();
             const response = await fetch('/restore', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ backupPath })
+                body: JSON.stringify({ backupContent: text })
             });
             const result = await response.json();
             if (result.success) {

@@ -257,24 +257,29 @@ app.post('/katalog/tambah', (req, res) => {
     res.redirect(buildRedirectWithMessage('/', { message: 'Katalog berhasil ditambahkan.', type: 'success', title: 'Sukses' }));
 });
 
-app.post('/backup', (req, res) => {
+app.get('/backup', (req, res) => {
     const db = readDB();
     const katalog = readKatalog();
     const backupPayload = buildBackupPayload(db, katalog, 'database.json', 'katalog.json');
     const backupFileName = createBackupFileName('backup.json');
     const backupPath = path.join(dbFolder, backupFileName);
-    fs.writeFileSync(backupPath, JSON.stringify(backupPayload, null, 2), 'utf8');
-    res.json({ success: true, fileName: backupFileName, path: backupPath });
+    const backupContent = JSON.stringify(backupPayload, null, 2);
+    fs.writeFileSync(backupPath, backupContent, 'utf8');
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${backupFileName}"`);
+    res.send(backupContent);
 });
 
 app.post('/restore', (req, res) => {
-    const { backupPath } = req.body;
-    if (!backupPath) {
-        return res.json({ success: false, message: 'File backup tidak ditemukan.' });
+    const { backupContent } = req.body;
+    if (!backupContent) {
+        return res.json({ success: false, message: 'Isi file backup tidak ditemukan.' });
     }
 
     try {
-        const restored = restoreFromBackup(backupPath);
+        const parsed = JSON.parse(backupContent);
+        const restored = parsed.data ? parsed : { data: parsed };
         if (!restored || !restored.data) {
             return res.json({ success: false, message: 'Format backup tidak valid.' });
         }
