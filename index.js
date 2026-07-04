@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const XLSX = require('xlsx');
 const {
     parseProdukSelection,
     normalizeKatalogData,
@@ -12,7 +13,8 @@ const {
     createBackupFileName,
     buildBackupPayload,
     restoreFromBackup,
-    pruneTransactionsByDate
+    pruneTransactionsByDate,
+    buildExcelRows
 } = require('./utils/appLogic');
 const app = express();
 const PORT = 3000;
@@ -293,6 +295,28 @@ app.post('/restore', (req, res) => {
     } catch (error) {
         return res.json({ success: false, message: 'Gagal memulihkan data: ' + error.message });
     }
+});
+
+app.get('/export-excel', (req, res) => {
+    const db = readDB();
+    const { bulanAwal, bulanAkhir } = req.query;
+
+    const transaksiFiltered = db.transaksi.filter((t) => {
+        const tBulan = t.tanggal.substring(0, 7);
+        const matchesAwal = bulanAwal ? tBulan >= bulanAwal : true;
+        const matchesAkhir = bulanAkhir ? tBulan <= bulanAkhir : true;
+        return matchesAwal && matchesAkhir;
+    });
+
+    const rows = buildExcelRows(transaksiFiltered);
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Penjualan');
+
+    const fileName = `laporan_penjualan_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.end(XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }));
 });
 
 app.post('/prune-data', (req, res) => {

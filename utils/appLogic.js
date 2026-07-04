@@ -193,6 +193,27 @@ function pruneTransactionsByDate(dbData, startDate, endDate) {
   return { success: true, deletedCount, data: updatedData };
 }
 
+function buildExcelRows(transaksi) {
+  const header = ['Tanggal', 'Produk', 'AW', 'TB', 'TTL', 'AH', 'TR', 'JML', 'Status'];
+  const rows = [header];
+
+  (transaksi || []).forEach((item) => {
+    rows.push([
+      item.tanggal || '',
+      item.produk || '',
+      item.aw || 0,
+      item.tb || 0,
+      item.ttl || 0,
+      item.ah || 0,
+      item.tr || 0,
+      item.jml || 0,
+      item.status || ''
+    ]);
+  });
+
+  return rows;
+}
+
 module.exports = {
   parseProdukSelection,
   normalizeKatalogData,
@@ -204,5 +225,6 @@ module.exports = {
   createBackupFileName,
   buildBackupPayload,
   restoreFromBackup,
-  pruneTransactionsByDate
+  pruneTransactionsByDate,
+  buildExcelRows
 };
