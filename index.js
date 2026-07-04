@@ -1,6 +1,13 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const {
+    parseProdukSelection,
+    normalizeKatalogData,
+    serializeKatalogData,
+    validateTransaksiInput,
+    validateKatalogInput
+} = require('./utils/appLogic');
 const app = express();
 const PORT = 3000;
 
@@ -46,10 +53,14 @@ function writeDB(data) { fs.writeFileSync(dbPath, JSON.stringify(data, null, 2),
 function readKatalog() {
     try {
         const rawData = fs.readFileSync(katalogPath, 'utf8');
-        return rawData ? JSON.parse(rawData) : katalogDefault;
-    } catch { return katalogDefault; }
+        const parsed = rawData ? JSON.parse(rawData) : katalogDefault;
+        return normalizeKatalogData(parsed);
+    } catch { return normalizeKatalogData(katalogDefault); }
 }
-function writeKatalog(data) { fs.writeFileSync(katalogPath, JSON.stringify(data, null, 2), 'utf8'); }
+function writeKatalog(data) {
+    const normalized = normalizeKatalogData(data);
+    fs.writeFileSync(katalogPath, JSON.stringify(serializeKatalogData(normalized), null, 2), 'utf8');
+}
 
 // ==========================================
 // ROUTES UTAMA (DEFAULT: BULAN SEKARANG)
@@ -104,32 +115,34 @@ app.get('/', (req, res) => {
 app.post('/tambah-transaksi', (req, res) => {
     const { produk, aw, tb, ah } = req.body;
     const db = readDB();
+    const parsedProduk = parseProdukSelection(produk);
+    const validation = validateTransaksiInput({
+        produk: parsedProduk.label,
+        aw,
+        tb,
+        ah,
+        harga: parsedProduk.harga
+    });
 
-    const namaProduk = produk;
-    const hargaMatch = produk.match(/\((\d+)[kK]?\)/);
-    const harga = hargaMatch ? parseInt(hargaMatch[1]) : 0;
+    if (!validation.valid) {
+        return res.send(`<script>alert('${validation.message}'); window.location='/';</script>`);
+    }
 
-    const stokAwal = parseInt(aw) || 0;
-    const tambahStok = parseInt(tb) || 0;
-    const stokAkhir = parseInt(ah) || 0;
-
+    const { stokAwal, tambahStok, stokAkhir, hargaJual, terjual } = validation;
     const ttl = stokAwal + tambahStok;
-    const tr = ttl - stokAkhir;
-    const jml = tr * harga;
-
-    if (tr < 0) return res.send("<script>alert('Stok akhir (AH) tidak boleh lebih besar dari Total Stok!'); window.location='/';</script>");
+    const jml = terjual * hargaJual;
 
     const tanggalHariIni = new Date().toISOString().split('T')[0];
 
     db.transaksi.push({
         id: Date.now(),
         tanggal: tanggalHariIni,
-        produk: namaProduk,
-        aw: stokAwal, tb: tambahStok, ttl: ttl, ah: stokAkhir, tr: tr, harga: harga, jml: jml,
+        produk: parsedProduk.label,
+        aw: stokAwal, tb: tambahStok, ttl: ttl, ah: stokAkhir, tr: terjual, harga: hargaJual, jml: jml,
         status: "Aktif"
     });
     
-    db.masterStok[namaProduk] = stokAkhir; 
+    db.masterStok[parsedProduk.label] = stokAkhir; 
     writeDB(db);
     res.redirect('/');
 });
@@ -157,14 +170,23 @@ app.post('/edit-transaksi', (req, res) => {
     const index = db.transaksi.findIndex(t => t.id === parseInt(id));
     if (index !== -1) {
         const t = db.transaksi[index];
-        t.aw = parseInt(aw) || 0;
-        t.tb = parseInt(tb) || 0;
-        t.ah = parseInt(ah) || 0;
-        t.ttl = t.aw + t.tb;
-        t.tr = t.ttl - t.ah;
+        const validation = validateTransaksiInput({
+            produk: t.produk,
+            aw,
+            tb,
+            ah,
+            harga: t.harga
+        });
 
-        if (t.tr < 0) return res.send("<script>alert('Gagal Edit! Stok Akhir (AH) melebih Total Stok.'); window.location='/';</script>");
-        
+        if (!validation.valid) {
+            return res.send(`<script>alert('${validation.message}'); window.location='/';</script>`);
+        }
+
+        t.aw = validation.stokAwal;
+        t.tb = validation.tambahStok;
+        t.ah = validation.stokAkhir;
+        t.ttl = t.aw + t.tb;
+        t.tr = validation.terjual;
         t.jml = t.tr * t.harga;
         db.transaksi[index] = t;
         db.masterStok[t.produk] = t.ah; 
@@ -186,17 +208,25 @@ app.post('/katalog/tambah', (req, res) => {
     kategori = kategori.trim().toUpperCase();
     brand = brand.trim().toUpperCase();
     nama_item = nama_item.trim();
-    harga_k = parseInt(harga_k) || 0;
-
-    if (!kategori || !brand || !nama_item || harga_k <= 0) return res.send("<script>alert('Data katalog tidak valid!'); window.location='/';</script>");
+    harga_k = parseInt(harga_k, 10) || 0;
 
     const katalog = readKatalog();
+    const validation = validateKatalogInput({
+        kategori,
+        brand,
+        nama_item,
+        harga_k,
+        katalog
+    });
+
+    if (!validation.valid) {
+        return res.send(`<script>alert('${validation.message}'); window.location='/';</script>`);
+    }
+
     if (!katalog[kategori]) katalog[kategori] = {};
     if (!katalog[kategori][brand]) katalog[kategori][brand] = [];
 
-    const produkString = `${nama_item} (${harga_k}k)`;
-    if (!katalog[kategori][brand].includes(produkString)) katalog[kategori][brand].push(produkString);
-
+    katalog[kategori][brand].push({ nama: nama_item, harga: harga_k });
     writeKatalog(katalog);
     res.redirect('/');
 });
@@ -206,7 +236,12 @@ app.post('/katalog/hapus', (req, res) => {
     const katalog = readKatalog();
 
     if (katalog[kategori] && katalog[kategori][brand]) {
-        katalog[kategori][brand] = katalog[kategori][brand].filter(p => p !== produkString);
+        katalog[kategori][brand] = katalog[kategori][brand].filter((item) => {
+            if (typeof item === 'string') {
+                return item !== produkString;
+            }
+            return `${item.nama} (${item.harga}k)` !== produkString;
+        });
         if (katalog[kategori][brand].length === 0) delete katalog[kategori][brand];
         if (Object.keys(katalog[kategori]).length === 0) delete katalog[kategori];
         writeKatalog(katalog);

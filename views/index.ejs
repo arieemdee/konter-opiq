@@ -40,8 +40,9 @@
                                 <% for (const [kategori, sub] of Object.entries(katalog)) { %>
                                     <optgroup label="--- <%= kategori %> ---">
                                         <% for (const [brand, list] of Object.entries(sub)) { %>
-                                            <% list.forEach(p => { %>
-                                                <option value="<%= brand %> - <%= p %>"><%= brand %> - <%= p %></option>
+                                            <% list.forEach(item => { %>
+                                                <% const produkLabel = `${brand} - ${item.nama} (${item.harga}k)`; %>
+                                                <option value="<%= produkLabel %>"><%= produkLabel %></option>
                                             <% }) %>
                                         <% } %>
                                     </optgroup>
@@ -219,10 +220,11 @@
                                     <div class="ml-2 mb-2">
                                         <span class="font-semibold text-gray-700 bg-gray-200 px-1.5 py-0.5 rounded text-[10px]"><%= brand %></span>
                                         <ul class="mt-1 space-y-1 ml-1">
-                                            <% list.forEach(p => { %>
+                                            <% list.forEach(item => { %>
+                                                <% const produkLabel = `${item.nama} (${item.harga}k)`; %>
                                                 <li class="flex justify-between items-center bg-white p-1 rounded border shadow-sm">
-                                                    <span><%= p %></span>
-                                                    <button onclick="hapusKatalog('<%= kategori %>', '<%= brand %>', '<%= p %>')" class="text-red-500 hover:text-red-700 font-bold px-1 hover:bg-red-50 rounded" title="Hapus Produk">✕</button>
+                                                    <span><%= produkLabel %></span>
+                                                    <button onclick="hapusKatalog('<%= kategori %>', '<%= brand %>', '<%= produkLabel %>')" class="text-red-500 hover:text-red-700 font-bold px-1 hover:bg-red-50 rounded" title="Hapus Produk">✕</button>
                                                 </li>
                                             <% }) %>
                                         </ul>
