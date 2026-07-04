@@ -23,127 +23,205 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <!-- SISI KIRI: INPUT DATA -->
-            <div class="bg-white p-6 rounded-lg shadow-md h-fit">
-                <h2 class="text-xl font-bold border-b pb-2 mb-4 text-gray-700">Form Input Harian</h2>
-                <form action="/tambah-transaksi" method="POST" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-600 mb-1">Pilih Produk / Item</label>
-                        <select name="produk" required class="w-full p-2 border rounded bg-gray-50 focus:ring-2 focus:ring-blue-400">
-                            <% for (const [kategori, sub] of Object.entries(katalog)) { %>
-                                <optgroup label="--- <%= kategori %> ---">
-                                    <% for (const [brand, list] of Object.entries(sub)) { %>
-                                        <% list.forEach(p => { %>
-                                            <option value="<%= brand %> - <%= p %>"><%= brand %> - <%= p %></option>
-                                        <% }) %>
-                                    <% } %>
-                                </optgroup>
-                            <% } %>
-                        </select>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-2">
+            <!-- SISI KIRI: MANAGEMENT FORMS -->
+            <div class="space-y-6">
+                
+                <!-- FORM 1: INPUT TRANSAKSI HARIAN -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-lg font-bold border-b pb-2 mb-4 text-gray-700">Form Input Harian</h2>
+                    <form action="/tambah-transaksi" method="POST" class="space-y-4">
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Stok Awal (AW)</label>
-                            <input type="number" name="aw" min="0" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Pilih Produk (Dari katalog.json)</label>
+                            <select name="produk" required class="w-full p-2 border rounded bg-gray-50 focus:ring-2 focus:ring-blue-400 text-sm">
+                                <% for (const [kategori, sub] of Object.entries(katalog)) { %>
+                                    <optgroup label="--- <%= kategori %> ---">
+                                        <% for (const [brand, list] of Object.entries(sub)) { %>
+                                            <% list.forEach(p => { %>
+                                                <option value="<%= brand %> - <%= p %>"><%= brand %> - <%= p %></option>
+                                            <% }) %>
+                                        <% } %>
+                                    </optgroup>
+                                <% } %>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Stok Awal (AW)</label>
+                                <input type="number" name="aw" min="0" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Tambah (TB)</label>
+                                <input type="number" name="tb" min="0" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Akhir (AH)</label>
+                                <input type="number" name="ah" min="0" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 text-sm" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded text-sm transition shadow">
+                            Simpan Transaksi
+                        </button>
+                    </form>
+                </div>
+
+                <!-- FORM 2: CRUD KATALOG (TAMBAH ITEM BARU) -->
+                <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-emerald-500">
+                    <h2 class="text-lg font-bold border-b pb-2 mb-4 text-emerald-700">⚙️ Pengaturan Katalog Produk</h2>
+                    <form action="/katalog/tambah" method="POST" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-0.5">Kategori Utama</label>
+                            <select name="kategori" class="w-full p-2 border rounded text-xs">
+                                <option value="DATA UTAMA">DATA UTAMA</option>
+                                <option value="DATA MINI / MINGGUAN">DATA MINI / MINGGUAN</option>
+                                <option value="DATA BULANAN">DATA BULANAN</option>
+                                <option value="AKSESORIS">AKSESORIS</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-0.5">Brand/Provider</label>
+                                <input type="text" name="brand" placeholder="Contoh: TELKOMSEL" required class="w-full p-2 border rounded text-xs uppercase">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-0.5">Harga Jual (Ribu)</label>
+                                <input type="number" name="harga_k" placeholder="Contoh: 30" required class="w-full p-2 border rounded text-xs">
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Tambah (TB)</label>
-                            <input type="number" name="tb" min="0" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400">
+                            <label class="block text-xs font-medium text-gray-500 mb-0.5">Nama Varian Paket / Item</label>
+                            <input type="text" name="nama_item" placeholder="Contoh: S 6GB atau KABEL M" required class="w-full p-2 border rounded text-xs">
                         </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Akhir (AH)</label>
-                            <input type="number" name="ah" min="0" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400" required>
-                        </div>
-                    </div>
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-1.5 rounded text-xs transition">
+                            ＋ Tambahkan ke Katalog.json
+                        </button>
+                    </form>
+                </div>
 
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded transition shadow">
-                        Simpan Transaksi
-                    </button>
-                </form>
-
-                <!-- FITUR FILTER & TUTUP BUKU -->
-                <div class="mt-8 pt-6 border-t border-gray-200">
-                    <h3 class="font-bold text-gray-700 mb-2">Filter & Manajemen Bulanan</h3>
-                    
-                    <!-- Form Filter -->
+                <!-- SELEKTOR BULAN & TUTUP BUKU -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="font-bold text-gray-700 mb-2 text-sm">Filter & Tutup Buku Bulanan</h3>
                     <form action="/" method="GET" class="flex gap-2 mb-4">
-                        <input type="month" name="bulan" value="<%= filterBulan %>" class="p-2 border rounded text-sm w-full">
-                        <button type="submit" class="bg-gray-700 text-white px-4 py-2 rounded text-sm hover:bg-gray-800">Filter</button>
+                        <input type="month" name="bulan" value="<%= filterBulan %>" class="p-2 border rounded text-xs w-full">
+                        <button type="submit" class="bg-gray-700 text-white px-3 py-2 rounded text-xs hover:bg-gray-800">Filter</button>
                         <% if(filterBulan) { %>
-                            <a href="/" class="bg-red-500 text-white px-3 py-2 rounded text-sm flex items-center">Reset</a>
+                            <a href="/" class="bg-red-500 text-white px-2 py-2 rounded text-xs flex items-center">Reset</a>
                         <% } %>
                     </form>
 
-                    <!-- Form Tutup Buku -->
                     <% if(filterBulan) { %>
-                        <form action="/tutup-buku" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin melakukan Tutup Buku untuk bulan ini? Semua transaksi bulan ini akan dikunci dan tidak bisa diubah.')">
+                        <form action="/tutup-buku" method="POST" onsubmit="return confirm('Kunci semua transaksi bulan ini?')">
                             <input type="hidden" name="bulanTutup" value="<%= filterBulan %>">
-                            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-2 rounded transition">
+                            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-semibold py-2 rounded transition">
                                 🔒 Tutup Buku Bulan <%= filterBulan %>
                             </button>
                         </form>
                     <% } else { %>
-                        <p class="text-xs text-red-500 italic bg-red-50 p-2 rounded text-center">Silakan pilih/filter bulan terlebih dahulu untuk mengaktifkan fitur Tutup Buku Akhir Bulan.</p>
+                        <p class="text-xs text-red-500 italic bg-red-50 p-2 rounded text-center">Pilih filter bulan untuk mengaktifkan Tutup Buku.</p>
                     <% } %>
                 </div>
+
             </div>
 
-            <!-- SISI KANAN: TABEL REKAP/TRANSAKSI (MEMAKAN 2 KOLOM) -->
-            <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-2 overflow-x-auto">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold text-gray-700">
-                        Daftar Laporan Penjualan <%= filterBulan ? `(${filterBulan})` : '(Semua Waktu)' %>
-                    </h2>
-                    <span class="text-xs text-gray-500">Keterangan: <b class="text-blue-600">AW</b> (Awal) | <b class="text-blue-600">TB</b> (Tambah) | <b class="text-blue-600">TTL</b> (Total) | <b class="text-blue-600">AH</b> (Akhir) | <b class="text-blue-600">TR</b> (Terjual)</span>
+            <!-- SISI KANAN: TABEL REKAP/TRANSAKSI (2 KOLOM) -->
+            <div class="space-y-6 lg:col-span-2">
+                <div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-gray-700">
+                            Laporan Penjualan <%= filterBulan ? `(${filterBulan})` : '(Semua Waktu)' %>
+                        </h2>
+                    </div>
+
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 uppercase text-xs border-b">
+                                <th class="p-3">Tanggal</th>
+                                <th class="p-3">Item/Produk</th>
+                                <th class="p-3 text-center">AW</th>
+                                <th class="p-3 text-center">TB</th>
+                                <th class="p-3 text-center">TTL</th>
+                                <th class="p-3 text-center">AH</th>
+                                <th class="p-3 text-center bg-blue-50 text-blue-700">TR</th>
+                                <th class="p-3 text-right">Harga</th>
+                                <th class="p-3 text-right bg-green-50 text-green-700 font-bold">Total (JML)</th>
+                                <th class="p-3 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            <% if (transaksi.length === 0) { %>
+                                <tr>
+                                    <td colspan="10" class="p-8 text-center text-gray-400 italic">Belum ada data penjualan tercatat.</td>
+                                </tr>
+                            <% } else { %>
+                                <% transaksi.forEach(t => { %>
+                                    <tr class="hover:bg-gray-50 transition">
+                                        <td class="p-3 text-xs whitespace-nowrap"><%= t.tanggal %></td>
+                                        <td class="p-3 font-medium text-gray-900"><%= t.produk %></td>
+                                        <td class="p-3 text-center text-gray-600"><%= t.aw %></td>
+                                        <td class="p-3 text-center text-gray-600"><%= t.tb %></td>
+                                        <td class="p-3 text-center text-gray-600"><%= t.ttl %></td>
+                                        <td class="p-3 text-center text-gray-600"><%= t.ah %></td>
+                                        <td class="p-3 text-center bg-blue-50 text-blue-700 font-semibold"><%= t.tr %></td>
+                                        <td class="p-3 text-right text-gray-600">Rp <%= t.harga %>.000</td>
+                                        <td class="p-3 text-right bg-green-50 text-green-700 font-bold">Rp <%= t.jml %>.000</td>
+                                        <td class="p-3 text-center">
+                                            <span class="px-2 py-0.5 text-xs rounded-full <%= t.status === 'Aktif' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+                                                <%= t.status %>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            <% } %>
+                        </tbody>
+                    </table>
                 </div>
 
-                <table class="w-full text-left border-collapse text-sm">
-                    <thead>
-                        <tr class="bg-gray-100 text-gray-600 uppercase text-xs border-b">
-                            <th class="p-3">Tanggal</th>
-                            <th class="p-3">Item/Produk</th>
-                            <th class="p-3 text-center">AW</th>
-                            <th class="p-3 text-center">TB</th>
-                            <th class="p-3 text-center">TTL</th>
-                            <th class="p-3 text-center">AH</th>
-                            <th class="p-3 text-center bg-blue-50 text-blue-700">TR</th>
-                            <th class="p-3 text-right">Harga</th>
-                            <th class="p-3 text-right bg-green-50 text-green-700 font-bold">Total (JML)</th>
-                            <th class="p-3 text-center">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y">
-                        <% if (transaksi.length === 0) { %>
-                            <tr>
-                                <td colspan="10" class="p-8 text-center text-gray-400 italic">Belum ada data penjualan tercatat.</td>
-                            </tr>
-                        <% } else { %>
-                            <% transaksi.forEach(t => { %>
-                                <tr class="hover:bg-gray-50 transition">
-                                    <td class="p-3 text-xs whitespace-nowrap"><%= t.tanggal %></td>
-                                    <td class="p-3 font-medium text-gray-900"><%= t.produk %></td>
-                                    <td class="p-3 text-center text-gray-600"><%= t.aw %></td>
-                                    <td class="p-3 text-center text-gray-600"><%= t.tb %></td>
-                                    <td class="p-3 text-center text-gray-600"><%= t.ttl %></td>
-                                    <td class="p-3 text-center text-gray-600"><%= t.ah %></td>
-                                    <td class="p-3 text-center bg-blue-50 text-blue-700 font-semibold"><%= t.tr %></td>
-                                    <td class="p-3 text-right text-gray-600">Rp <%= t.harga %>.000</td>
-                                    <td class="p-3 text-right bg-green-50 text-green-700 font-bold">Rp <%= t.jml %>.000</td>
-                                    <td class="p-3 text-center">
-                                        <span class="px-2 py-0.5 text-xs rounded-full <%= t.status === 'Aktif' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
-                                            <%= t.status %>
-                                        </span>
-                                    </td>
-                                </tr>
-                            <% }) %>
+                <!-- INDIKATOR DAFTAR KATALOG AKTIF -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-base font-bold text-gray-700 mb-3 border-b pb-2">📋 Manajemen Data Produk Aktif (Bisa Dihapus)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto pr-2 text-xs">
+                        <% for (const [kategori, sub] of Object.entries(katalog)) { %>
+                            <div class="bg-gray-50 p-3 rounded border">
+                                <h4 class="font-bold text-blue-600 mb-1 text-xs"><%= kategori %></h4>
+                                <% for (const [brand, list] of Object.entries(sub)) { %>
+                                    <div class="ml-2 mb-2">
+                                        <span class="font-semibold text-gray-700 bg-gray-200 px-1.5 py-0.5 rounded text-[10px]"><%= brand %></span>
+                                        <ul class="mt-1 space-y-1 ml-1">
+                                            <% list.forEach(p => { %>
+                                                <li class="flex justify-between items-center bg-white p-1 rounded border shadow-sm">
+                                                    <span><%= p %></span>
+                                                    <button onclick="hapusKatalog('<%= kategori %>', '<%= brand %>', '<%= p %>')" class="text-red-500 hover:text-red-700 font-bold px-1 hover:bg-red-50 rounded">✕</button>
+                                                </li>
+                                            <% }) %>
+                                        </ul>
+                                    </div>
+                                <% } %>
+                            </div>
                         <% } %>
-                    </tbody>
-                </table>
+                    </div>
+                </div>
             </div>
 
         </div>
     </div>
 
+    <script>
+        async function hapusKatalog(kategori, brand, produkString) {
+            if (confirm(`Hapus "${produkString}" dari katalog?`)) {
+                const response = await fetch('/katalog/hapus', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ kategori, brand, produkString })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    alert('Gagal menghapus produk!');
+                }
+            }
+        }
+    </script>
 </body>
 </html>

@@ -1,0 +1,13 @@
+{
+  "DATA UTAMA": {
+    "TELKOMSEL": ["S 6GB (30k)", "B 3GB (15k)", "B 7GB (30k)"],
+    "INDOSAT": ["2GB (20k)", "6GB (35k)"],
+    "AXIS": ["6GB (25k)", "AXIS 0K (10k)"],
+    "TRI": ["5GB (30k)"],
+    "SMARTFREN": ["2GB UNL (20k)", "3GB / 14 (20k)", "UNL / 7 (35k)", "UNL / 28 (90k)"],
+    "XL": ["S 11GB (30k)", "M 45GB (60k)", "L 113GB (80k)", "XL 190GB (110k)", "XL 0K (15k)"]
+  },
+  "AKSESORIS": {
+    "UMUM": ["KABEL M (10k)", "KABEL C (15k)", "KABEL IP (20k)", "C TO C (30k)", "CAR BIASA (16k)", "CAR FAST (28k)", "HEADSET (20k)", "HOLDER (50k)"]
+  }
+}
