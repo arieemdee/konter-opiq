@@ -32,7 +32,7 @@
                     <form action="/tambah-transaksi" method="POST" class="space-y-4">
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Pilih Produk (Dari katalog.json)</label>
-                            <select name="produk" required class="w-full p-2 border rounded bg-gray-50 focus:ring-2 focus:ring-blue-400 text-sm">
+                            <select name="produk" id="produkSelect" required class="w-full p-2 border rounded bg-gray-50 focus:ring-2 focus:ring-blue-400 text-sm">
                                 <% for (const [kategori, sub] of Object.entries(katalog)) { %>
                                     <optgroup label="--- <%= kategori %> ---">
                                         <% for (const [brand, list] of Object.entries(sub)) { %>
@@ -47,18 +47,19 @@
 
                         <div class="grid grid-cols-3 gap-2">
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Stok Awal (AW)</label>
-                                <input type="number" name="aw" min="0" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 text-sm">
+                                <label class="block text-xs font-medium text-gray-500 mb-1 text-blue-600 font-bold">Awal (AW)</label>
+                                <input type="number" name="aw" id="stokAwalInput" min="0" value="0" class="w-full p-2 border rounded bg-yellow-50 focus:ring-2 focus:ring-blue-400 text-sm font-bold">
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Tambah (TB)</label>
                                 <input type="number" name="tb" min="0" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 text-sm">
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Akhir (AH)</label>
-                                <input type="number" name="ah" min="0" value="0" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 text-sm" required>
+                                <label class="block text-xs font-medium text-gray-500 mb-1 text-red-600 font-bold">Sisa (AH)</label>
+                                <input type="number" name="ah" min="0" value="0" class="w-full p-2 border rounded bg-red-50 focus:ring-2 focus:ring-blue-400 text-sm font-bold" required>
                             </div>
                         </div>
+                        <p class="text-[10px] text-gray-400 italic">*Tips: Nilai Sisa (AH) harus lebih kecil dari (AW + TB) agar terhitung ada penjualan.</p>
 
                         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded text-sm transition shadow">
                             Simpan Transaksi
@@ -141,8 +142,8 @@
                                 <th class="p-3 text-center">AW</th>
                                 <th class="p-3 text-center">TB</th>
                                 <th class="p-3 text-center">TTL</th>
-                                <th class="p-3 text-center">AH</th>
-                                <th class="p-3 text-center bg-blue-50 text-blue-700">TR</th>
+                                <th class="p-3 text-center">AH (Sisa)</th>
+                                <th class="p-3 text-center bg-blue-50 text-blue-700">TR (Laku)</th>
                                 <th class="p-3 text-right">Harga</th>
                                 <th class="p-3 text-right bg-green-50 text-green-700 font-bold">Total (JML)</th>
                                 <th class="p-3 text-center">Status</th>
@@ -179,7 +180,7 @@
 
                 <!-- INDIKATOR DAFTAR KATALOG AKTIF -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
-                    <h3 class="text-base font-bold text-gray-700 mb-3 border-b pb-2">📋 Manajemen Data Produk Aktif (Bisa Dihapus)</h3>
+                    <h3 class="text-base font-bold text-gray-700 mb-3 border-b pb-2">📋 Laporan Data Produk Aktif (Bisa Dihapus)</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto pr-2 text-xs">
                         <% for (const [kategori, sub] of Object.entries(katalog)) { %>
                             <div class="bg-gray-50 p-3 rounded border">
@@ -206,7 +207,28 @@
         </div>
     </div>
 
+    <!-- JAVASCRIPT LOGIC AUTO FILL STOK AWAL -->
     <script>
+        // Membaca masterStok dari backend Express secara langsung ke client browser
+        const masterStok = <%- JSON.stringify(masterStok || {}) %>;
+        const produkSelect = document.getElementById('produkSelect');
+        const stokAwalInput = document.getElementById('stokAwalInput');
+
+        function updateStokAwalOtomatis() {
+            const produkTerpilih = produkSelect.value;
+            // Jika produk ini pernah diinput sebelumnya, ambil nilai sisa (AH) terakhirnya sebagai Stok Awal hari ini
+            if (masterStok && masterStok[produkTerpilih] !== undefined) {
+                stokAwalInput.value = masterStok[produkTerpilih];
+            } else {
+                stokAwalInput.value = 0; // default jika benar-benar produk baru gres
+            }
+        }
+
+        // Pemicu saat dropdown diganti atau saat halaman baru saja dibuka
+        produkSelect.addEventListener('change', updateStokAwalOtomatis);
+        window.addEventListener('DOMContentLoaded', updateStokAwalOtomatis);
+
+        // Fungsi Hapus Katalog
         async function hapusKatalog(kategori, brand, produkString) {
             if (confirm(`Hapus "${produkString}" dari katalog?`)) {
                 const response = await fetch('/katalog/hapus', {
