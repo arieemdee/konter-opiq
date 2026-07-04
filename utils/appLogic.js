@@ -168,6 +168,31 @@ function restoreFromBackup(filePath) {
   };
 }
 
+function pruneTransactionsByDate(dbData, startDate, endDate) {
+  if (!dbData || !Array.isArray(dbData.transaksi)) {
+    return { success: false, message: 'Data transaksi tidak valid.' };
+  }
+
+  if (!startDate || !endDate) {
+    return { success: false, message: 'Rentang tanggal wajib dipilih.' };
+  }
+
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T23:59:59`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
+    return { success: false, message: 'Rentang tanggal tidak valid.' };
+  }
+
+  const filtered = dbData.transaksi.filter((item) => {
+    const itemDate = new Date(`${item.tanggal}T00:00:00`);
+    return itemDate >= start && itemDate <= end;
+  });
+
+  const deletedCount = dbData.transaksi.length - filtered.length;
+  const updatedData = { ...dbData, transaksi: filtered };
+  return { success: true, deletedCount, data: updatedData };
+}
+
 module.exports = {
   parseProdukSelection,
   normalizeKatalogData,
@@ -178,5 +203,6 @@ module.exports = {
   deleteKategori,
   createBackupFileName,
   buildBackupPayload,
-  restoreFromBackup
+  restoreFromBackup,
+  pruneTransactionsByDate
 };

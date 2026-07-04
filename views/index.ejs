@@ -72,11 +72,25 @@
                 <!-- FORM TUTUP BUKU -->
                 <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
                     <div class="flex justify-between items-center mb-3">
-                        <h3 class="font-bold text-gray-700 text-sm">🗂️ Backup & Restore</h3>
+                        <h3 class="font-bold text-gray-700 text-sm">🗂️ Backup, Restore & Potong Data</h3>
                     </div>
-                    <div class="flex flex-wrap gap-2">
+                    <div class="flex flex-wrap gap-2 mb-3">
                         <button type="button" onclick="backupData()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded text-xs font-bold">Download Backup</button>
                         <button type="button" onclick="bukaModalRestore()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-bold">Restore via File</button>
+                    </div>
+                    <div class="border-t pt-3">
+                        <p class="text-[11px] font-semibold text-gray-600 mb-2">Potong data laporan penjualan berdasarkan tanggal</p>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 mb-1">Dari Tanggal</label>
+                                <input type="date" id="pruneStartDate" class="w-full p-2 border rounded text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 mb-1">Sampai Tanggal</label>
+                                <input type="date" id="pruneEndDate" class="w-full p-2 border rounded text-xs">
+                            </div>
+                        </div>
+                        <button type="button" onclick="potongData()" class="w-full bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-xs font-bold">Potong Data Lama</button>
                     </div>
                 </div>
 
@@ -517,6 +531,28 @@
         }
 
         kategoriSelect.addEventListener('change', toggleKategoriBaru);
+
+        async function potongData() {
+            const startDate = document.getElementById('pruneStartDate').value;
+            const endDate = document.getElementById('pruneEndDate').value;
+            if (!startDate || !endDate) {
+                bukaModalHelper({ title: 'Perhatian', message: 'Pilih rentang tanggal terlebih dahulu.', type: 'warning', confirmText: 'Tutup' });
+                return;
+            }
+
+            const response = await fetch('/prune-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ startDate, endDate })
+            });
+            const result = await response.json();
+            if (result.success) {
+                bukaModalHelper({ title: 'Berhasil', message: result.message || `Berhasil memotong data. ${result.deletedCount} transaksi dihapus.`, type: 'success', confirmText: 'Tutup' });
+                setTimeout(() => window.location.reload(), 700);
+            } else {
+                bukaModalHelper({ title: 'Gagal', message: result.message || 'Gagal memotong data.', type: 'error', confirmText: 'Tutup' });
+            }
+        }
 
         async function backupData() {
             try {

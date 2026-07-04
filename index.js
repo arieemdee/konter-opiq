@@ -11,7 +11,8 @@ const {
     deleteKategori,
     createBackupFileName,
     buildBackupPayload,
-    restoreFromBackup
+    restoreFromBackup,
+    pruneTransactionsByDate
 } = require('./utils/appLogic');
 const app = express();
 const PORT = 3000;
@@ -292,6 +293,18 @@ app.post('/restore', (req, res) => {
     } catch (error) {
         return res.json({ success: false, message: 'Gagal memulihkan data: ' + error.message });
     }
+});
+
+app.post('/prune-data', (req, res) => {
+    const { startDate, endDate } = req.body;
+    const db = readDB();
+    const result = pruneTransactionsByDate(db, startDate, endDate);
+    if (!result.success) {
+        return res.json(result);
+    }
+
+    writeDB(result.data);
+    return res.json({ success: true, deletedCount: result.deletedCount, message: `Data laporan lama berhasil dipangkas. ${result.deletedCount} transaksi dihapus.` });
 });
 
 app.post('/katalog/hapus', (req, res) => {
