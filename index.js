@@ -5,6 +5,7 @@ const {
     parseProdukSelection,
     normalizeKatalogData,
     serializeKatalogData,
+    resolveKategoriInput,
     validateTransaksiInput,
     validateKatalogInput
 } = require('./utils/appLogic');
@@ -204,15 +205,20 @@ app.post('/hapus-transaksi', (req, res) => {
 });
 
 app.post('/katalog/tambah', (req, res) => {
-    let { kategori, brand, nama_item, harga_k } = req.body;
-    kategori = kategori.trim().toUpperCase();
-    brand = brand.trim().toUpperCase();
-    nama_item = nama_item.trim();
+    let { kategori, kategoriBaru, brand, nama_item, harga_k } = req.body;
+    const kategoriResolution = resolveKategoriInput({ kategori, kategoriBaru });
+    if (!kategoriResolution.valid) {
+        return res.send(`<script>alert('${kategoriResolution.message}'); window.location='/';</script>`);
+    }
+
+    let resolvedKategori = kategoriResolution.kategori;
+    brand = (brand || '').trim().toUpperCase();
+    nama_item = (nama_item || '').trim();
     harga_k = parseInt(harga_k, 10) || 0;
 
     const katalog = readKatalog();
     const validation = validateKatalogInput({
-        kategori,
+        kategori: resolvedKategori,
         brand,
         nama_item,
         harga_k,
@@ -223,10 +229,10 @@ app.post('/katalog/tambah', (req, res) => {
         return res.send(`<script>alert('${validation.message}'); window.location='/';</script>`);
     }
 
-    if (!katalog[kategori]) katalog[kategori] = {};
-    if (!katalog[kategori][brand]) katalog[kategori][brand] = [];
+    if (!katalog[resolvedKategori]) katalog[resolvedKategori] = {};
+    if (!katalog[resolvedKategori][brand]) katalog[resolvedKategori][brand] = [];
 
-    katalog[kategori][brand].push({ nama: nama_item, harga: harga_k });
+    katalog[resolvedKategori][brand].push({ nama: nama_item, harga: harga_k });
     writeKatalog(katalog);
     res.redirect('/');
 });

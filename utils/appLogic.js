@@ -96,6 +96,21 @@ function validateTransaksiInput({ produk, aw, tb, ah, harga }) {
   return { valid: true, stokAwal, tambahStok, stokAkhir, hargaJual, terjual };
 }
 
+function resolveKategoriInput({ kategori, kategoriBaru }) {
+  const selected = (kategori || '').trim().toUpperCase();
+  const custom = (kategoriBaru || '').trim().toUpperCase();
+
+  if (custom) {
+    return { valid: true, kategori: custom };
+  }
+
+  if (!selected) {
+    return { valid: false, message: 'Kategori wajib dipilih atau ditulis.' };
+  }
+
+  return { valid: true, kategori: selected };
+}
+
 function validateKatalogInput({ kategori, brand, nama_item, harga_k, katalog }) {
   if (!kategori || !brand || !nama_item || !harga_k) {
     return { valid: false, message: 'Semua field katalog wajib diisi.' };
@@ -117,6 +132,7 @@ module.exports = {
   parseProdukSelection,
   normalizeKatalogData,
   serializeKatalogData,
+  resolveKategoriInput,
   validateTransaksiInput,
   validateKatalogInput
 };

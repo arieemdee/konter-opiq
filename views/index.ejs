@@ -259,12 +259,17 @@
             <form action="/katalog/tambah" method="POST" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-600 mb-1">Pilih Kategori</label>
-                    <select name="kategori" class="w-full p-2 border rounded text-sm bg-gray-50">
+                    <select name="kategori" id="kategoriSelect" class="w-full p-2 border rounded text-sm bg-gray-50">
                         <option value="DATA UTAMA">DATA UTAMA</option>
                         <option value="DATA MINI / MINGGUAN">DATA MINI / MINGGUAN</option>
                         <option value="DATA BULANAN">DATA BULANAN</option>
                         <option value="AKSESORIS">AKSESORIS</option>
+                        <option value="__CUSTOM__">+ Tambah Kategori Baru</option>
                     </select>
+                </div>
+                <div id="kategoriBaruWrap" class="hidden">
+                    <label class="block text-xs font-bold text-gray-600 mb-1">Kategori Baru</label>
+                    <input type="text" name="kategoriBaru" id="kategoriBaruInput" placeholder="Cth: DATA HARIAN" class="w-full p-2 border rounded text-sm uppercase">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -369,6 +374,9 @@
         const masterStok = JSON.parse(`<%- JSON.stringify(masterStok || {}) %>`);
         const produkSelect = document.getElementById('produkSelect');
         const stokAwalInput = document.getElementById('stokAwalInput');
+        const kategoriSelect = document.getElementById('kategoriSelect');
+        const kategoriBaruWrap = document.getElementById('kategoriBaruWrap');
+        const kategoriBaruInput = document.getElementById('kategoriBaruInput');
 
         function updateStokAwalOtomatis() {
             const produkTerpilih = produkSelect.value;
@@ -376,6 +384,17 @@
         }
         produkSelect.addEventListener('change', updateStokAwalOtomatis);
         window.addEventListener('DOMContentLoaded', updateStokAwalOtomatis);
+
+        function toggleKategoriBaru() {
+            const isCustom = kategoriSelect.value === '__CUSTOM__';
+            kategoriBaruWrap.classList.toggle('hidden', !isCustom);
+            if (!isCustom) {
+                kategoriBaruInput.value = '';
+            }
+        }
+
+        kategoriSelect.addEventListener('change', toggleKategoriBaru);
+        window.addEventListener('DOMContentLoaded', toggleKategoriBaru);
 
         async function hapusKatalog(kategori, brand, produkString) {
             if (confirm(`Hapus "${produkString}" dari katalog?`)) {
