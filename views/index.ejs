@@ -78,7 +78,7 @@
                             ?
                         </button>
                     </div>
-                    <form action="/tutup-buku" method="POST" onsubmit="return confirm('Kunci semua transaksi pada bulan terpilih? Data tidak akan bisa di-edit/hapus lagi!')" class="space-y-2">
+                    <form id="formTutupBuku" action="/tutup-buku" method="POST" class="space-y-2" data-confirm-submit data-confirm-title="Konfirmasi Tutup Buku" data-confirm-message="Kunci semua transaksi pada bulan terpilih? Data tidak akan bisa di-edit atau dihapus lagi.">
                         <div>
                             <label class="block text-[10px] uppercase font-bold text-gray-400 mb-1">Pilih Bulan Yang Akan Dikunci</label>
                             <input type="month" name="bulanTutup" required class="p-2 border rounded text-xs w-full bg-red-50/50">
@@ -215,7 +215,10 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-40 overflow-y-auto pr-2 text-xs">
                         <% for (const [kategori, sub] of Object.entries(katalog)) { %>
                             <div class="bg-gray-50 p-3 rounded border">
-                                <h4 class="font-bold text-blue-600 mb-1 text-xs"><%= kategori %></h4>
+                                <div class="flex justify-between items-center mb-1">
+                                    <h4 class="font-bold text-blue-600 text-xs"><%= kategori %></h4>
+                                    <button onclick="hapusKategori('<%= kategori %>')" class="text-[10px] text-red-600 hover:text-red-700 font-bold" title="Hapus Kategori">✕</button>
+                                </div>
                                 <% for (const [brand, list] of Object.entries(sub)) { %>
                                     <div class="ml-2 mb-2">
                                         <span class="font-semibold text-gray-700 bg-gray-200 px-1.5 py-0.5 rounded text-[10px]"><%= brand %></span>
@@ -370,6 +373,21 @@
             </div>
         </div>
     </div>
+
+    <div id="modalHelper" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg w-[420px] shadow-2xl">
+            <div class="flex flex-col items-center text-center">
+                <div id="modalHelperIcon" class="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold bg-blue-100 text-blue-700"></div>
+                <h2 id="modalHelperTitle" class="text-lg font-bold text-gray-800 mt-4"></h2>
+                <p id="modalHelperMessage" class="text-sm text-gray-600 mt-2"></p>
+            </div>
+            <div class="mt-6 flex justify-center gap-2">
+                <button id="modalHelperCancel" class="hidden bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm font-semibold">Batal</button>
+                <button id="modalHelperConfirm" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-semibold">OK</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const masterStok = JSON.parse(`<%- JSON.stringify(masterStok || {}) %>`);
         const produkSelect = document.getElementById('produkSelect');
@@ -377,13 +395,88 @@
         const kategoriSelect = document.getElementById('kategoriSelect');
         const kategoriBaruWrap = document.getElementById('kategoriBaruWrap');
         const kategoriBaruInput = document.getElementById('kategoriBaruInput');
+        const modalHelper = document.getElementById('modalHelper');
+        const modalHelperTitle = document.getElementById('modalHelperTitle');
+        const modalHelperMessage = document.getElementById('modalHelperMessage');
+        const modalHelperIcon = document.getElementById('modalHelperIcon');
+        const modalHelperConfirm = document.getElementById('modalHelperConfirm');
+        const modalHelperCancel = document.getElementById('modalHelperCancel');
+
+        let helperConfirmCallback = null;
+
+        function setHelperType(type) {
+            const map = {
+                success: { icon: '✓', classes: 'bg-emerald-100 text-emerald-700' },
+                error: { icon: '!', classes: 'bg-red-100 text-red-700' },
+                warning: { icon: '!', classes: 'bg-yellow-100 text-yellow-700' },
+                info: { icon: 'i', classes: 'bg-blue-100 text-blue-700' }
+            };
+            const config = map[type] || map.info;
+            modalHelperIcon.className = `w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${config.classes}`;
+            modalHelperIcon.textContent = config.icon;
+        }
+
+        function bukaModalHelper({ title, message, type = 'info', confirmText = 'OK', cancelText = 'Batal', onConfirm = null, showCancel = false }) {
+            modalHelperTitle.textContent = title;
+            modalHelperMessage.textContent = message;
+            setHelperType(type);
+            modalHelperConfirm.textContent = confirmText;
+            modalHelperCancel.textContent = cancelText;
+            modalHelperCancel.classList.toggle('hidden', !showCancel);
+            helperConfirmCallback = onConfirm;
+            modalHelper.classList.remove('hidden');
+        }
+
+        function tutupModalHelper() {
+            modalHelper.classList.add('hidden');
+            helperConfirmCallback = null;
+        }
+
+        modalHelperConfirm.addEventListener('click', () => {
+            if (typeof helperConfirmCallback === 'function') {
+                helperConfirmCallback();
+            }
+            tutupModalHelper();
+        });
+
+        modalHelperCancel.addEventListener('click', tutupModalHelper);
+        modalHelper.addEventListener('click', (event) => {
+            if (event.target === modalHelper) tutupModalHelper();
+        });
+
+        function showFlashMessage() {
+            const flashMessage = <%- JSON.stringify(flashMessage || '') %>;
+            const flashType = <%- JSON.stringify(flashType || 'info') %>;
+            const flashTitle = <%- JSON.stringify(flashTitle || 'Informasi') %>;
+            if (flashMessage) {
+                bukaModalHelper({ title: flashTitle, message: flashMessage, type: flashType, confirmText: 'Tutup' });
+            }
+        }
 
         function updateStokAwalOtomatis() {
             const produkTerpilih = produkSelect.value;
             stokAwalInput.value = (masterStok && masterStok[produkTerpilih] !== undefined) ? masterStok[produkTerpilih] : 0;
         }
         produkSelect.addEventListener('change', updateStokAwalOtomatis);
-        window.addEventListener('DOMContentLoaded', updateStokAwalOtomatis);
+        window.addEventListener('DOMContentLoaded', () => {
+            updateStokAwalOtomatis();
+            toggleKategoriBaru();
+            showFlashMessage();
+            document.querySelectorAll('form[data-confirm-submit]').forEach((form) => {
+                form.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    bukaModalHelper({
+                        title: form.dataset.confirmTitle || 'Konfirmasi',
+                        message: form.dataset.confirmMessage || 'Apakah Anda yakin?',
+                        type: 'warning',
+                        confirmText: 'Lanjutkan',
+                        cancelText: 'Batal',
+                        showCancel: true,
+                        onConfirm: () => form.submit()
+                    });
+                });
+            });
+        });
 
         function toggleKategoriBaru() {
             const isCustom = kategoriSelect.value === '__CUSTOM__';
@@ -394,17 +487,55 @@
         }
 
         kategoriSelect.addEventListener('change', toggleKategoriBaru);
-        window.addEventListener('DOMContentLoaded', toggleKategoriBaru);
 
         async function hapusKatalog(kategori, brand, produkString) {
-            if (confirm(`Hapus "${produkString}" dari katalog?`)) {
-                const response = await fetch('/katalog/hapus', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ kategori, brand, produkString })
-                });
-                if ((await response.json()).success) window.location.reload();
-            }
+            bukaModalHelper({
+                title: 'Hapus Produk',
+                message: `Hapus "${produkString}" dari katalog?`,
+                type: 'warning',
+                confirmText: 'Hapus',
+                cancelText: 'Batal',
+                showCancel: true,
+                onConfirm: async () => {
+                    const response = await fetch('/katalog/hapus', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ kategori, brand, produkString })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        bukaModalHelper({ title: 'Berhasil', message: result.message || 'Produk berhasil dihapus.', type: 'success', confirmText: 'Tutup' });
+                        setTimeout(() => window.location.reload(), 700);
+                    } else {
+                        bukaModalHelper({ title: 'Gagal', message: result.message || 'Gagal menghapus produk.', type: 'error', confirmText: 'Tutup' });
+                    }
+                }
+            });
+        }
+
+        async function hapusKategori(kategori) {
+            bukaModalHelper({
+                title: 'Hapus Kategori',
+                message: `Hapus kategori "${kategori}" beserta semua produknya?`,
+                type: 'warning',
+                confirmText: 'Hapus',
+                cancelText: 'Batal',
+                showCancel: true,
+                onConfirm: async () => {
+                    const response = await fetch('/katalog/hapus', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ kategori })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        bukaModalHelper({ title: 'Berhasil', message: result.message || 'Kategori berhasil dihapus.', type: 'success', confirmText: 'Tutup' });
+                        setTimeout(() => window.location.reload(), 700);
+                    } else {
+                        bukaModalHelper({ title: 'Gagal', message: result.message || 'Gagal menghapus kategori.', type: 'error', confirmText: 'Tutup' });
+                    }
+                }
+            });
         }
 
         // LOGIKA MODAL KATALOG
@@ -440,14 +571,28 @@
         }
 
         async function hapusTransaksi(id) {
-            if (confirm("Apakah Anda yakin ingin menghapus data penjualan ini secara permanen?")) {
-                const response = await fetch('/hapus-transaksi', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id })
-                });
-                if ((await response.json()).success) window.location.reload();
-            }
+            bukaModalHelper({
+                title: 'Hapus Transaksi',
+                message: 'Apakah Anda yakin ingin menghapus data penjualan ini secara permanen?',
+                type: 'warning',
+                confirmText: 'Hapus',
+                cancelText: 'Batal',
+                showCancel: true,
+                onConfirm: async () => {
+                    const response = await fetch('/hapus-transaksi', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        bukaModalHelper({ title: 'Berhasil', message: result.message || 'Transaksi berhasil dihapus.', type: 'success', confirmText: 'Tutup' });
+                        setTimeout(() => window.location.reload(), 700);
+                    } else {
+                        bukaModalHelper({ title: 'Gagal', message: result.message || 'Gagal menghapus transaksi.', type: 'error', confirmText: 'Tutup' });
+                    }
+                }
+            });
         }
         // Fungsi untuk Modal Info Buku
         const modalInfoBuku = document.getElementById('modalInfoBuku');

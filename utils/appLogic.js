@@ -128,11 +128,26 @@ function validateKatalogInput({ kategori, brand, nama_item, harga_k, katalog }) 
   return { valid: true, katalog: normalized };
 }
 
+function deleteKategori(katalog, kategori) {
+  if (!katalog || !kategori) {
+    return { success: false, message: 'Kategori tidak valid.' };
+  }
+
+  const normalized = normalizeKatalogData(katalog);
+  if (!normalized[kategori]) {
+    return { success: false, message: 'Kategori tidak ditemukan.' };
+  }
+
+  delete normalized[kategori];
+  return { success: true, katalog: normalized };
+}
+
 module.exports = {
   parseProdukSelection,
   normalizeKatalogData,
   serializeKatalogData,
   resolveKategoriInput,
   validateTransaksiInput,
-  validateKatalogInput
+  validateKatalogInput,
+  deleteKategori
 };

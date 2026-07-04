@@ -7,10 +7,21 @@ const {
     serializeKatalogData,
     resolveKategoriInput,
     validateTransaksiInput,
-    validateKatalogInput
+    validateKatalogInput,
+    deleteKategori
 } = require('./utils/appLogic');
 const app = express();
 const PORT = 3000;
+
+function buildRedirectWithMessage(path, { message, type = 'info', title = 'Informasi' }) {
+    const [basePath, existingQuery = ''] = path.split('?');
+    const params = new URLSearchParams(existingQuery);
+    if (message) params.set('message', message);
+    if (type) params.set('type', type);
+    if (title) params.set('title', title);
+    const query = params.toString();
+    return query ? `${basePath}?${query}` : basePath;
+}
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -74,6 +85,9 @@ app.get('/', (req, res) => {
     const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
     let { bulanAwal, bulanAkhir, page } = req.query;
+    const flashMessage = req.query.message ? decodeURIComponent(req.query.message) : '';
+    const flashType = req.query.type || 'info';
+    const flashTitle = req.query.title ? decodeURIComponent(req.query.title) : 'Informasi';
     
     // Default: Bulan Sekarang jika tidak ada filter
     if (Object.keys(req.query).filter(k => k !== 'page').length === 0) {
@@ -109,7 +123,10 @@ app.get('/', (req, res) => {
         filterBulanAkhir: bulanAkhir || '',
         grandTotal: grandTotal,
         currentPage: currentPage,
-        totalPages: totalPages
+        totalPages: totalPages,
+        flashMessage: flashMessage,
+        flashType: flashType,
+        flashTitle: flashTitle
     });
 });
 
@@ -126,7 +143,7 @@ app.post('/tambah-transaksi', (req, res) => {
     });
 
     if (!validation.valid) {
-        return res.send(`<script>alert('${validation.message}'); window.location='/';</script>`);
+        return res.redirect(buildRedirectWithMessage('/', { message: validation.message, type: 'error', title: 'Gagal Menyimpan' }));
     }
 
     const { stokAwal, tambahStok, stokAkhir, hargaJual, terjual } = validation;
@@ -145,12 +162,12 @@ app.post('/tambah-transaksi', (req, res) => {
     
     db.masterStok[parsedProduk.label] = stokAkhir; 
     writeDB(db);
-    res.redirect('/');
+    res.redirect(buildRedirectWithMessage('/', { message: 'Transaksi berhasil disimpan.', type: 'success', title: 'Sukses' }));
 });
 
 app.post('/tutup-buku', (req, res) => {
     const { bulanTutup } = req.body;
-    if (!bulanTutup) return res.send("<script>alert('Pilih bulan yang ingin ditutup!'); window.location='/';</script>");
+    if (!bulanTutup) return res.redirect(buildRedirectWithMessage('/', { message: 'Pilih bulan yang ingin ditutup.', type: 'error', title: 'Perhatian' }));
 
     const db = readDB();
     let count = 0;
@@ -161,7 +178,7 @@ app.post('/tutup-buku', (req, res) => {
         return t;
     });
     writeDB(db);
-    res.send(`<script>alert('Berhasil Tutup Buku! ${count} transaksi bulan ${bulanTutup} dikunci.'); window.location='/?bulanAwal=${bulanTutup}&bulanAkhir=${bulanTutup}';</script>`);
+    res.redirect(buildRedirectWithMessage(`/?bulanAwal=${bulanTutup}&bulanAkhir=${bulanTutup}`, { message: `Berhasil tutup buku! ${count} transaksi bulan ${bulanTutup} dikunci.`, type: 'success', title: 'Sukses' }));
 });
 
 app.post('/edit-transaksi', (req, res) => {
@@ -180,7 +197,7 @@ app.post('/edit-transaksi', (req, res) => {
         });
 
         if (!validation.valid) {
-            return res.send(`<script>alert('${validation.message}'); window.location='/';</script>`);
+            return res.redirect(buildRedirectWithMessage('/', { message: validation.message, type: 'error', title: 'Gagal Mengedit' }));
         }
 
         t.aw = validation.stokAwal;
@@ -193,7 +210,7 @@ app.post('/edit-transaksi', (req, res) => {
         db.masterStok[t.produk] = t.ah; 
         writeDB(db);
     }
-    res.redirect(req.get('Referrer') || '/');
+    res.redirect(buildRedirectWithMessage(req.get('Referrer') || '/', { message: 'Transaksi berhasil diperbarui.', type: 'success', title: 'Sukses' }));
 });
 
 app.post('/hapus-transaksi', (req, res) => {
@@ -201,14 +218,14 @@ app.post('/hapus-transaksi', (req, res) => {
     const db = readDB();
     db.transaksi = db.transaksi.filter(t => t.id !== parseInt(id));
     writeDB(db);
-    res.json({ success: true });
+    res.json({ success: true, message: 'Transaksi berhasil dihapus.' });
 });
 
 app.post('/katalog/tambah', (req, res) => {
     let { kategori, kategoriBaru, brand, nama_item, harga_k } = req.body;
     const kategoriResolution = resolveKategoriInput({ kategori, kategoriBaru });
     if (!kategoriResolution.valid) {
-        return res.send(`<script>alert('${kategoriResolution.message}'); window.location='/';</script>`);
+        return res.redirect(buildRedirectWithMessage('/', { message: kategoriResolution.message, type: 'error', title: 'Gagal Menyimpan' }));
     }
 
     let resolvedKategori = kategoriResolution.kategori;
@@ -226,7 +243,7 @@ app.post('/katalog/tambah', (req, res) => {
     });
 
     if (!validation.valid) {
-        return res.send(`<script>alert('${validation.message}'); window.location='/';</script>`);
+        return res.redirect(buildRedirectWithMessage('/', { message: validation.message, type: 'error', title: 'Gagal Menyimpan' }));
     }
 
     if (!katalog[resolvedKategori]) katalog[resolvedKategori] = {};
@@ -234,12 +251,21 @@ app.post('/katalog/tambah', (req, res) => {
 
     katalog[resolvedKategori][brand].push({ nama: nama_item, harga: harga_k });
     writeKatalog(katalog);
-    res.redirect('/');
+    res.redirect(buildRedirectWithMessage('/', { message: 'Katalog berhasil ditambahkan.', type: 'success', title: 'Sukses' }));
 });
 
 app.post('/katalog/hapus', (req, res) => {
     const { kategori, brand, produkString } = req.body;
     const katalog = readKatalog();
+
+    if (kategori && !brand && !produkString) {
+        const result = deleteKategori(katalog, kategori);
+        if (result.success) {
+            writeKatalog(result.katalog);
+            return res.json({ success: true, message: 'Kategori berhasil dihapus.' });
+        }
+        return res.json({ success: false, message: result.message });
+    }
 
     if (katalog[kategori] && katalog[kategori][brand]) {
         katalog[kategori][brand] = katalog[kategori][brand].filter((item) => {
