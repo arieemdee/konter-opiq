@@ -58,19 +58,18 @@ app.get('/', (req, res) => {
     const db = readDB();
     const katalog = readKatalog();
     
-    // Dapatkan string bulan saat ini (Format: YYYY-MM)
     const today = new Date();
     const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-    let { bulanAwal, bulanAkhir } = req.query;
+    let { bulanAwal, bulanAkhir, page } = req.query;
     
-    // Jika pertama kali buka (Query kosong), otomatis set ke bulan sekarang (Tgl 1 s/d Akhir Bulan)
-    if (Object.keys(req.query).length === 0) {
+    // Default: Bulan Sekarang jika tidak ada filter
+    if (Object.keys(req.query).filter(k => k !== 'page').length === 0) {
         bulanAwal = currentMonth;
         bulanAkhir = currentMonth;
     }
 
-    // Filter transaksi berdasarkan rentang string kronologis
+    // Filter transaksi
     const transaksiFiltered = db.transaksi.filter(t => {
         const tBulan = t.tanggal.substring(0, 7);
         const matchesAwal = bulanAwal ? tBulan >= bulanAwal : true;
@@ -78,15 +77,27 @@ app.get('/', (req, res) => {
         return matchesAwal && matchesAkhir;
     });
 
-    const grandTotal = transaksiFiltered.reduce((sum, item) => sum + item.jml, 0);
+    // --- LOGIKA PAGINASI ---
+    const limit = 50; // Jumlah item per halaman
+    const currentPage = parseInt(page) || 1;
+    const totalItems = transaksiFiltered.length;
+    const totalPages = Math.ceil(totalItems / limit);
+    
+    const startIndex = (currentPage - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedItems = transaksiFiltered.slice(startIndex, endIndex);
 
+    const grandTotal = transaksiFiltered.reduce((sum, item) => sum + item.jml, 0);
+    
     res.render('index', { 
         katalog: katalog, 
-        transaksi: transaksiFiltered, 
+        transaksi: paginatedItems, // Mengirim data yang sudah di-slice
         masterStok: db.masterStok,
         filterBulanAwal: bulanAwal || '',
         filterBulanAkhir: bulanAkhir || '',
-        grandTotal: grandTotal
+        grandTotal: grandTotal,
+        currentPage: currentPage,
+        totalPages: totalPages
     });
 });
 
